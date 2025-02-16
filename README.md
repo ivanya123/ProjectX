@@ -1,2 +1,2 @@
 # ProjectX
-Fridge
+Fridge for Ivan and Polina
