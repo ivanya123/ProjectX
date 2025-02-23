@@ -50,7 +50,7 @@ cursor.execute('''
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS fridge (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        products_id INT,
+        products_id INT NOT NULL,
         amount INT NOT NULL,
         FOREIGN KEY (products_id) REFERENCES products(id) ON DELETE CASCADE
     )
