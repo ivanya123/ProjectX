@@ -15,6 +15,11 @@ def adding(table_name, *values):
     except sqlite3.OperationalError:
         print(f'Нет таблицы {table_name}')
 
+
+def add_in_fridge(product_name: str, amount: float) -> tuple[str, float]:
+    pass
+
+
 # пишешь название таблицы и данные по порядку (то же кол-во, что и столбцов, не считая id (он проставляется автоматом)!)
 adding('recipes', '1', '1')
 
