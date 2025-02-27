@@ -1,8 +1,6 @@
 import sqlite3
-from typing import Any
+from create import cursor, conn
 
-conn = sqlite3.connect("cooking.db")
-cursor = conn.cursor()
 
 cursor.execute("SELECT name FROM sqlite_master "
                "WHERE type='table' AND name NOT LIKE 'sqlite_%'")
@@ -13,22 +11,27 @@ all_table_names = [row[0] for row in cursor.fetchall()]
 # products
 # recipes_products
 
-def reading(table_names: list[str]) -> list[tuple[[str]]]:
-    for table_name in table_names:
-        try:
-            cursor.execute(f'SELECT * FROM {table_name}')
-            columns = [desc[0] for desc in cursor.description]
-            print(table_name)
-            print(columns)
-            rows = cursor.fetchall()
-            for row in rows:
-                print(row)
-        except sqlite3.OperationalError:
-            print(f'Нет таблицы {table_name}')
+def reading(table_name: str) -> list[tuple[[str]]]:
+    try:
+        cursor.execute(f'SELECT * FROM {table_name}')
+        columns = [desc[0] for desc in cursor.description]
+        rows = cursor.fetchall()
+    except sqlite3.OperationalError:
+        print(f'Нет таблицы {table_name}')
+    return columns, rows
 
+# можно вывести только одну таблицу
+print(reading('recipes_products'))
 
-# можно читать все таблицы, несколько или только одну
-# reading(['fridge'])
-reading(all_table_names)
+def reading_products():
+    try:
+        cursor.execute('SELECT * FROM products')
+        columns = [desc[0] for desc in cursor.description]
+        rows = cursor.fetchall()
+    except sqlite3.OperationalError:
+        print('Нет таблицы products')
+    return columns, rows
+
+print(reading_products())
 
 conn.close()

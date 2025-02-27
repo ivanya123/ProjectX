@@ -1,8 +1,6 @@
-import sqlite3
+from typing import Callable
 
-conn = sqlite3.connect("cooking.db")
-cursor = conn.cursor()
-
+from create import cursor, conn
 cursor.execute("SELECT name FROM sqlite_master "
                "WHERE type='table' AND name NOT LIKE 'sqlite_%'")
 all_table_names = [row[0] for row in cursor.fetchall()]
@@ -19,7 +17,20 @@ def deleting_rows (table_name, id):
     cursor.execute(f'DELETE FROM {table_name} WHERE id={id}')
     conn.commit()
 
+def factory_func(table_name: str):
+    def new_func(id):
+        deleting_rows(table_name, id)
+    return new_func
+
+deleteing_products = factory_func('products')
+deleteing_recipes = factory_func('recipes')
+deleteing_categories = factory_func('categories')
+deleteing_fridge = factory_func('fridge')
+
+deleteing_products(3)
+
+
+
 #удаляем строку в таблице по id
 #deleting_rows('recipes', 3)
 
-conn.close()
