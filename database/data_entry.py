@@ -1,5 +1,6 @@
 import sqlite3
 from create import cursor, conn
+from classes import Recipes, Products, Categories, Fridge
 
 def adding(table_name, *values):
     try:
@@ -12,17 +13,11 @@ def adding(table_name, *values):
     except sqlite3.OperationalError:
         print(f'Нет таблицы {table_name}')
 
-def add_in_fridge(products_id: str, amount: float):
-    try:
-        cursor.execute("INSERT INTO fridge (products_id, amount) VALUES (?, ?)", (products_id, amount))
-        conn.commit()
-    except sqlite3.OperationalError:
-        print('Нет таблицы fridge')
 
-def add_in_recipes(name: str, description: str, product_list: list[tuple]):
+
+def add_in_recipes(recipes: Recipes, product_list: list[tuple]):
     try:
-        cursor.execute("INSERT INTO recipes (name, description) VALUES (?, ?)", (name, description))
-        conn.commit()
+        cursor.execute("INSERT INTO recipes (name, description) VALUES (?, ?)", (recipes.name, recipes.description))
         recipes_id = cursor.lastrowid
         add_in_recipes_products(recipes_id, product_list)
     except sqlite3.OperationalError:
@@ -34,29 +29,38 @@ def add_in_recipes_products(recipes_id: int, product_list:list[tuple]):
                        (recipes_id, row[0], row[1]))
         conn.commit()
 
-def add_in_products(name: str, product_type: str, categories_id: int):
+def add_in_products(products: Products):
     try:
-        cursor.execute("INSERT INTO products (name, type) VALUES (?, ?)", (name, product_type))
-        conn.commit()
-        products_id = cursor.lastrowid
-        cursor.execute("INSERT INTO categories_products (categories_id, products_id) VALUES (?, ?)", (categories_id, products_id))
+        cursor.execute("INSERT INTO products (name, type) VALUES (?, ?)", (products.name, products.product_type))
+        products.id = cursor.lastrowid
+        cursor.execute("INSERT INTO categories_products (categories_id, products_id) VALUES (?, ?)", (products.category_id, products.id))
         conn.commit()
     except sqlite3.OperationalError:
         print('Нет таблицы products или categories_products')
 
-def add_in_categories(name: str):
+# new_product = Products (name="Алексеctcй", product_type="alex@example.com", category_id = 1)
+# add_in_products(new_product)
+
+def add_in_categories(categories: Categories):
     try:
-        cursor.execute("INSERT INTO categories (name) VALUES (?)", (name,))
+        cursor.execute("INSERT INTO categories (name) VALUES (?)", (categories.name,))
         conn.commit()
     except sqlite3.OperationalError:
         print('Нет таблицы categories')
+
+def add_in_fridge(fridge: Fridge):
+    try:
+        cursor.execute("INSERT INTO fridge (products_id, amount) VALUES (?, ?)", (fridge.products_id, fridge.amount))
+        conn.commit()
+    except sqlite3.OperationalError:
+        print('Нет таблицы fridge')
 
 
 #add_in_products('курица', 'кг', 2)
 #add_in_categories('молочное')
 #add_in_fridge(2,10)
 #adding('recipes', '1', '1')
-add_in_recipes_products(2, [(8, 20)])
+#add_in_recipes_products(2, [(8, 20)])
 
 # recipes
 # products

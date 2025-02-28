@@ -21,7 +21,7 @@ def reading(table_name: str) -> list[tuple[[str]]]:
     return columns, rows
 
 # можно вывести только одну таблицу
-print(reading('recipes_products'))
+print(reading('categories_products'))
 
 def reading_products():
     try:

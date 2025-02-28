@@ -26,7 +26,7 @@ if __name__ == '__main__':
         CREATE TABLE IF NOT EXISTS recipes_products (
             recipes_id INT,
             products_id INT,
-            amount INT NOT NULL,
+            amount REAL NOT NULL,
             PRIMARY KEY (recipes_id, products_id),
             FOREIGN KEY (recipes_id) REFERENCES recipes(id) ON DELETE CASCADE,
             FOREIGN KEY (products_id) REFERENCES products(id) ON DELETE CASCADE
