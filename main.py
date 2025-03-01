@@ -1,7 +1,9 @@
-import database.create
-import database.data_entry
-import database.reading as dr
+import flet as ft
+from app.router import Router
+
+def main(page: ft.Page):
+    Router(page)
 
 
-
-
+if __name__ == '__main__':
+    ft.app(target=main)
