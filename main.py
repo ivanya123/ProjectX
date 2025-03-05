@@ -7,5 +7,5 @@ def main(page: ft.Page):
 
 
 if __name__ == '__main__':
-    ft.app(target=main, view=ft.WEB_BROWSER, assets_dir="assets", port=5050)
+    ft.app(target=main, assets_dir="assets")
 
