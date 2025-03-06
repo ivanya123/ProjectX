@@ -9,13 +9,18 @@ class LinkContainer(ft.Container):
         self.expand_loose = True
         self.alignment = ft.alignment.center
         self.bgcolor = '#d1c0a8'
-        self.content = ft.Image(src=source, filter_quality=ft.FilterQuality.NONE, border_radius=10,
-                                fit=ft.ImageFit.COVER, repeat=ft.ImageRepeat.REPEAT, width=self.width,
-                                )
         self.border_radius = 10
         self.ink = True
         self.ink_color = '#b3a696'
         self.on_click = lambda _: page.go(link)
+        self.content = ft.Image(
+            src=source,
+            filter_quality=ft.FilterQuality.NONE,
+            border_radius=10,
+            fit=ft.ImageFit.COVER,
+            repeat=ft.ImageRepeat.REPEAT,
+            width=self.width
+        )
 
 
 class MainContainer(ft.Container):
@@ -42,9 +47,9 @@ class MainApp:
     def view(self, page: ft.Page, params: Params, basket: Basket):
         page.title = 'Кулинарная книга Ивана и Полины'
         self.controls = [
-                MainContainer(page),
-                ft.Container(expand=18),
-            ]
+            MainContainer(page),
+            ft.Container(expand=18),
+        ]
         self.main_view = ft.View(
             controls=self.controls,
             padding=ft.padding.all(0),
