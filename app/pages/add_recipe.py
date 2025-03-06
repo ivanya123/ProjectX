@@ -9,6 +9,10 @@ from flet_route import Params, Basket
 
 from app.pages.mainapp import MainApp
 
+MAIN_STYLE_TEXT = ft.TextStyle(
+
+)
+
 
 def add_recipe():
     pass
@@ -82,14 +86,29 @@ class FilterRow(ft.Row):
                                                  text=f'{category.name}')
                                for category in categories])
         self.dropdown = ft.Dropdown(
-            expand=True,
+            expand=1,
+            enable_filter=True,
+            enable_search=True,
+            dense=True,
+            content_padding=0,
+            label='Категория',
+            border=ft.border.symmetric(horizontal=ft.border.BorderSide(1, '#b3a696')),
+            border_width=1,
             options=self.controls_,
             on_change=change_filter
+        )
+
+        self.container_dropdown = ft.Container(
+            expand=1,
+            margin=ft.margin.only(top=5),
+            blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
+            alignment=ft.alignment.center,
+            content=self.dropdown
         )
         self.textfield = ft.TextField(expand=1, hint_text='Фильтрация по названию', label='Фильтр',
                                       on_change=change_filter)
         self.controls: list[ft.Dropdown, ft.TextField] = [
-            self.dropdown,
+            self.container_dropdown,
             self.textfield
         ]
 
@@ -104,16 +123,17 @@ class AddProductRow(ft.Row):
         self.product = product
         self.column = column
         self.expand = 1
-
+        self.text_ = ft.Text(f'{self.product.name}', size=18, color=ft.colors.WHITE)
         self.controls = [
             ft.Container(
-                expand=3,
+                expand=4,
                 blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
                 alignment=ft.alignment.top_left,
-                content=ft.Text(f'{self.product.name}', size=18, color=ft.colors.WHITE),
+                content=self.text_,
+                height=self.text_.size * 1.2,
             ),
             ft.IconButton(icon=ft.icons.ADD, expand=1, icon_color=ft.colors.WHITE, bgcolor=ft.Colors.BLUE,
-                          on_click=self.on_click),
+                          on_click=self.on_click, tooltip='Добавить', height=self.text_.size * 1.2, padding=0)
         ]
 
     def on_click(self, _: ft.ControlEvent):
@@ -130,6 +150,7 @@ class AllProducts(ft.Column):
         super().__init__()
         self.expand = 8
         self.scroll = ft.ScrollMode.ALWAYS
+        self.spacing = 3
         list_products = [
             AddProductRow(product, column) for product in products
         ]
@@ -142,31 +163,35 @@ class ProductRow(ft.Row):
         self.parent: ft.Column
         self.product = product
         self.expand = 1
-        self.count_field = ft.TextField(hint_text='Кол-во', expand=2, text_size=18)
+        self.container_product = ft.Container(
+            expand=3,
+            blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
+            alignment=ft.alignment.top_left,
+            content=ft.Text(
+                value=f'{self.product.name}',
+                size=18,
+                color=ft.colors.WHITE,
+            )
+        )
+
+        self.count_field = ft.TextField(hint_text='Кол-во', text_size=18, content_padding=2,
+                                        expand_loose=True, expand=2)
         self.controls = [
+            self.container_product,
             ft.Container(
-                expand=1,
+                expand=2,
                 blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
                 alignment=ft.alignment.top_left,
-                content=ft.Text(
-                    value=f'{self.product.name}',
-                    size=18,
-                    color=ft.colors.WHITE,
-                )
-            ),
-            ft.Container(
-                expand=1
-            ),
-            ft.Container(
-                expand=1,
-                blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
-                alignment=ft.alignment.top_left,
+                height=self.count_field.text_size * 1.2,
                 content=ft.Row(
-                    alignment=ft.MainAxisAlignment.END,
+                    expand=1,
+                    alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
                         self.count_field,
                         ft.IconButton(icon=ft.icons.DELETE, expand=1,
-                                      on_click=self.delete_row)
+                                      on_click=self.delete_row, icon_color=ft.colors.RED_ACCENT,
+                                      hover_color=ft.colors.RED_50, tooltip='Удалить',
+                                      icon_size=10, height=self.count_field.text_size * 1.2, padding=0)
                     ]
                 )
             )
@@ -186,8 +211,9 @@ class ProductsContainer(ft.Container):
         super().__init__()
         self.expand = 7
         self.border = ft.border.all(0)
-        self.alignment = ft.alignment.top_left
-        self.column = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True, controls=[])
+        self.alignment = ft.alignment.top_center
+        self.column = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True, controls=[],
+                                alignment=ft.MainAxisAlignment.START, spacing=3)
         self.all_products = [AddProductRow(product, self.column) for product in fake_products]
         self.products_row = AllProducts(fake_products, self.column)
         self.filter = FilterRow(self.change_filter)
@@ -198,6 +224,9 @@ class ProductsContainer(ft.Container):
             ]
         )
         self.content = ft.Row(
+            vertical_alignment=ft.CrossAxisAlignment.START,
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            spacing=1,
             controls=[self.column,
                       ft.Container(
                           expand=1,
