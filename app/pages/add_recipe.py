@@ -1,3 +1,4 @@
+import math
 import random
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -8,10 +9,7 @@ from flet.core.form_field_control import InputBorder
 from flet_route import Params, Basket
 
 from app.pages.mainapp import MainApp
-
-MAIN_STYLE_TEXT = ft.TextStyle(
-
-)
+from app.styles import *
 
 
 def add_recipe():
@@ -30,12 +28,12 @@ row_add = ft.Row(
     ]
 )
 
-container_name = ft.Container(expand=1,
-                              content=ft.TextField(hint_text='Рецепт: ',
-                                                   color=ft.colors.WHITE70, text_style=ft.TextStyle(italic=True,
-                                                                                                    size=15),
-                                                   prefix_style=ft.TextStyle(italic=True, color=ft.colors.WHITE24,
-                                                                             size=15),
+container_name = ft.Container(expand=2,
+                              content=ft.TextField(hint_text='Введите название рецепта',
+                                                   hint_style=MAIN_STYLE_TEXT,
+                                                   label='Название рецепта',
+                                                   label_style=LABEL_STYLE_TEXT,
+                                                   text_style=MAIN_STYLE_TEXT,
                                                    border=InputBorder.NONE,
                                                    multiline=True,
                                                    max_lines=2),
@@ -43,18 +41,13 @@ container_name = ft.Container(expand=1,
                               alignment=ft.alignment.top_right,
                               border=ft.border.all(1, '#b3a696'),
                               border_radius=5)
-row_high = ft.Row(
-    alignment=ft.MainAxisAlignment.START,
-    controls=[container_name],
-    expand=1
-)
 
 
 @dataclass
 class FakeProduct:
-    id: int
     name: str
-    type: str = 'весовой'
+    id: int = None
+    type_: str = 'весовой'
     category: Optional[list['FakeCategory']] = None
 
 
@@ -80,10 +73,14 @@ class FilterRow(ft.Row):
         super().__init__()
         self.expand = 2
         self.alignment = ft.MainAxisAlignment.SPACE_BETWEEN
-        self.controls_ = [ft.DropdownOption(key=0, content=ft.Text('Все категории'), text='Все')]
+        self.controls_ = [ft.DropdownOption(key=0,
+                                            content=ft.Text('Все категории', style=MAIN_STYLE_TEXT),
+                                            text='Все',
+                                            style=MAIN_STYLE_TEXT)]
         self.controls_.extend([ft.DropdownOption(key=f'{category.id}',
-                                                 content=ft.Text(f'{category.name}'),
-                                                 text=f'{category.name}')
+                                                 content=ft.Text(f'{category.name}',
+                                                                 style=MAIN_STYLE_TEXT),
+                                                 text=f'{category.name}', style=MAIN_STYLE_TEXT)
                                for category in categories])
         self.dropdown = ft.Dropdown(
             expand=1,
@@ -92,6 +89,8 @@ class FilterRow(ft.Row):
             dense=True,
             content_padding=0,
             label='Категория',
+            label_style=LABEL_STYLE_TEXT,
+            text_style=MAIN_STYLE_TEXT,
             border=ft.border.symmetric(horizontal=ft.border.BorderSide(1, '#b3a696')),
             border_width=1,
             options=self.controls_,
@@ -106,7 +105,8 @@ class FilterRow(ft.Row):
             content=self.dropdown
         )
         self.textfield = ft.TextField(expand=1, hint_text='Фильтрация по названию', label='Фильтр',
-                                      on_change=change_filter)
+                                      on_change=change_filter, hint_style=MAIN_STYLE_TEXT, text_style=MAIN_STYLE_TEXT,
+                                      label_style=LABEL_STYLE_TEXT)
         self.controls: list[ft.Dropdown, ft.TextField] = [
             self.container_dropdown,
             self.textfield
@@ -123,17 +123,17 @@ class AddProductRow(ft.Row):
         self.product = product
         self.column = column
         self.expand = 1
-        self.text_ = ft.Text(f'{self.product.name}', size=18, color=ft.colors.WHITE)
+        self.text_ = ft.Text(f'{self.product.name}', style=MAIN_STYLE_TEXT)
         self.controls = [
             ft.Container(
                 expand=4,
                 blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
                 alignment=ft.alignment.top_left,
                 content=self.text_,
-                height=self.text_.size * 1.2,
+                height=self.text_.style.size * 1.2,
             ),
             ft.IconButton(icon=ft.icons.ADD, expand=1, icon_color=ft.colors.WHITE, bgcolor=ft.Colors.BLUE,
-                          on_click=self.on_click, tooltip='Добавить', height=self.text_.size * 1.2, padding=0)
+                          on_click=self.on_click, tooltip='Добавить', height=self.text_.style.size * 1.2, padding=0)
         ]
 
     def on_click(self, _: ft.ControlEvent):
@@ -169,20 +169,21 @@ class ProductRow(ft.Row):
             alignment=ft.alignment.top_left,
             content=ft.Text(
                 value=f'{self.product.name}',
-                size=18,
-                color=ft.colors.WHITE,
+                style=MAIN_STYLE_TEXT
             )
         )
 
-        self.count_field = ft.TextField(hint_text='Кол-во', text_size=18, content_padding=2,
-                                        expand_loose=True, expand=2)
+        self.count_field = ft.TextField(hint_text='Кол-во', content_padding=2,
+                                        expand_loose=True, expand=2,
+                                        hint_style=MAIN_STYLE_TEXT,
+                                        text_style=MAIN_STYLE_TEXT)
         self.controls = [
             self.container_product,
             ft.Container(
                 expand=2,
                 blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
                 alignment=ft.alignment.top_left,
-                height=self.count_field.text_size * 1.2,
+                height=self.count_field.text_style.size * 1.2,
                 content=ft.Row(
                     expand=1,
                     alignment=ft.MainAxisAlignment.CENTER,
@@ -191,7 +192,8 @@ class ProductRow(ft.Row):
                         ft.IconButton(icon=ft.icons.DELETE, expand=1,
                                       on_click=self.delete_row, icon_color=ft.colors.RED_ACCENT,
                                       hover_color=ft.colors.RED_50, tooltip='Удалить',
-                                      icon_size=10, height=self.count_field.text_size * 1.2, padding=0)
+                                      icon_size=self.count_field.text_style.size,
+                                      height=self.count_field.text_style.size * 1.2, padding=0)
                     ]
                 )
             )
@@ -237,12 +239,11 @@ class ProductsContainer(ft.Container):
 
     def change_filter(self, _: ft.ControlEvent):
         category_filter, text_filter = self.filter.data_
-        print(category_filter, text_filter)
         new_products = self.all_products.copy()
-        print(new_products[0].data_)
-        if int(category_filter):
-            new_products = [product for product in new_products if
-                            product.data_.category[0].id == int(category_filter)]
+        if category_filter:
+            if int(category_filter):
+                new_products = [product for product in new_products if
+                                product.data_.category[0].id == int(category_filter)]
         if text_filter:
             new_products = [product for product in new_products if
                             text_filter.lower() in product.data_.name.lower()]
@@ -254,30 +255,18 @@ class TabDesc(ft.Tab):
     def __init__(self, tabs: 'TabsDesc', **kwargs):
         super().__init__(**kwargs)
         self.text = len(tabs.tabs) - 1 if len(tabs.tabs) else 1
+        self.text_style = TAB_STYLE_TEXT
         self.textfield = ft.TextField(multiline=True,
                                       expand=True,
                                       min_lines=5,
                                       border=InputBorder.NONE,
                                       text_vertical_align=-1.0,
-                                      text_style=ft.TextStyle(
-                                          italic=True,
-                                          weight=ft.FontWeight.W_500,
-                                          size=18,
-                                          color=ft.colors.WHITE
-                                      ),
+                                      text_style=MAIN_STYLE_TEXT,
                                       label=f'{self.text}. Этап',
-                                      prefix_text=f'{self.text}. ',
+                                      label_style=LABEL_STYLE_TEXT,
                                       align_label_with_hint=True,
-                                      label_style=ft.TextStyle(
-                                          italic=True,
-                                          size=20,
-                                          color=ft.colors.WHITE
-                                      ),
-                                      prefix_style=ft.TextStyle(
-                                          italic=True,
-                                          size=18,
-                                          color=ft.colors.WHITE
-                                      ))
+                                      prefix_text=f'{self.text}. ',
+                                      prefix_style=MAIN_STYLE_TEXT)
         self.content: ft.Container = ft.Container(
             expand=1,
             blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
@@ -333,6 +322,7 @@ class TabsDesc(ft.Tabs):
 
 class AddRecipe(MainApp):
     def __init__(self):
+        self.container_name = None
         self.my_tabs = None
 
     def view(self, page: ft.Page, params: Params, basket: Basket):
@@ -341,11 +331,11 @@ class AddRecipe(MainApp):
         container.image = ft.DecorationImage(
             src="images/add_recipe_background.webp", repeat=ft.ImageRepeat.REPEAT
         )
-
+        self.container_name = container_name
         self.my_tabs = TabsDesc()
 
         container.content = ft.Column(
-            controls=[row_high,
+            controls=[self.container_name,
                       self.my_tabs,
                       ProductsContainer(),
                       row_add]
@@ -356,4 +346,5 @@ class AddRecipe(MainApp):
                 print(self.my_tabs.data_)
 
         page.on_keyboard_event = func
+
         return self.main_view
