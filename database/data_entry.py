@@ -56,7 +56,7 @@ def add_in_categories(categories: Categories):
     except sqlite3.OperationalError:
         print('Нет таблицы categories')
 
-# add_in_categories(Categories(name='зеленое'))
+# add_in_categories(Categories(name='жидкость'))
 
 def add_in_fridge(fridge: Fridge):
     try:
