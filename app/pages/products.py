@@ -5,9 +5,13 @@ from flet_route import Params, Basket
 
 from app.pages import FakeCategory, categories, FakeProduct, fake_products
 from app.pages.mainapp import MainApp
+from database import *
 
 from app.styles import *
 
+
+
+Categories
 
 class ContainerCategory(ft.Container):
     def __init__(self, category: FakeCategory, func_category: Callable):

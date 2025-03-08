@@ -6,7 +6,7 @@ from classes import Recipes, Products, Categories, Fridge
 from collections import defaultdict
 
 
-def reading_recipes():
+def reading_recipes() -> list[Recipes]:
     cursor.execute("""
         SELECT recipes.id, recipes.name, recipes.description,
                products.id, products.name, recipes_products.amount, products.type,
@@ -52,11 +52,7 @@ def reading_recipes():
     return recipes
 
 
-if __name__ == '__main__':
-    pass
-    # pprint(reading_recipes())
-
-def reading_categories():
+def reading_categories() -> list[Categories]:
     cursor.execute("""
             SELECT categories.id, categories.name
             FROM categories
@@ -65,7 +61,8 @@ def reading_categories():
     categories = [Categories(id=row[0], name=row[1]) for row in rows]
     return categories
 
-def reading_products():
+
+def reading_products() -> list[Products]:
     cursor.execute("""
             SELECT products.id, products.name, products.type,
                    categories.id, categories.name
@@ -87,10 +84,14 @@ def reading_products():
                 products_dict[product_id]['categories'][category_id]['name'] = category_name
 
     products = [Products(id=product_id, name=product_data['name'],
-                                               product_type=product_data['product_type'],
-                                               category_list=[Categories(id=category_id,
-                                                                         name=category_data['name'])
-                                                              for category_id, category_data in
-                                                              product_data['categories'].items()])
-                                     for product_id, product_data in products_dict.items()]
+                         product_type=product_data['product_type'],
+                         category_list=[Categories(id=category_id,
+                                                   name=category_data['name'])
+                                        for category_id, category_data in
+                                        product_data['categories'].items()])
+                for product_id, product_data in products_dict.items()]
     return products
+
+
+if __name__ == '__main__':
+    pprint(reading_products())
