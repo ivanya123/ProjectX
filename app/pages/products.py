@@ -14,9 +14,10 @@ class ContainerCategory(ft.Container):
         super().__init__()
         self.category = category
         self.blur = ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP)
-        self.content = ft.Text(category.name, style=MAIN_STYLE_TEXT)
+        self.content = ft.Text(category.name, style=LABEL_STYLE_TEXT)
         self.on_click = func_category
         self.ink = True
+        self.padding = 0
 
     @property
     def data_(self):
@@ -49,9 +50,9 @@ class RadioType(ft.RadioGroup):
     def __init__(self):
         super().__init__(content=ft.Row())
         self.expand = 1
-        self.content = ft.Column(
-            spacing=2,
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+        self.content = ft.Row(
+            spacing=0,
+            alignment=ft.MainAxisAlignment.SPACE_AROUND,
             controls=[
                 ft.Radio(value='весовой', label='Весовой', label_style=LABEL_STYLE_TEXT),
                 ft.Radio(value='штучный', label='Штучный', label_style=LABEL_STYLE_TEXT),
@@ -60,7 +61,7 @@ class RadioType(ft.RadioGroup):
         )
 
 
-class RowProduct(ft.Row):
+class RowProduct(ft.Column):
     def __init__(self):
         super().__init__()
         self.expand = 3
@@ -77,39 +78,43 @@ class RowProduct(ft.Row):
         )
         self.controls = [
             ft.Container(
-                expand=1,
+                expand=2,
                 blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
                 content=self.text_name,
             ),
             ft.Container(
-                expand=1,
+                expand=2,
                 blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
                 content=self.radio_type
             ),
-            ft.Container(
+            ft.Row(
                 expand=3,
-                border=ft.border.all(1, ft.colors.GREY_600),
-                border_radius=ft.border_radius.all(5),
-                content=ft.Column(
-                    spacing=1,
-                    controls=[
-                        ft.Text('Выбранные категории:', style=LABEL_STYLE_TEXT),
-                        self.in_category
-                    ]
-                )
-            ),
-            ft.Container(
-                expand=3,
-                border=ft.border.all(1, ft.colors.GREY_600),
-                border_radius=ft.border_radius.all(5),
-                content=ft.Column(
-                    spacing=1,
-                    controls=[
-                        ft.Text('Выберите категории:', style=LABEL_STYLE_TEXT),
-                        self.all_category
-                    ]
-                )
-            ),
+                controls=[
+                    ft.Container(
+                        expand=3,
+                        border=ft.border.all(1, ft.colors.GREY_600),
+                        border_radius=ft.border_radius.all(5),
+                        content=ft.Column(
+                            spacing=1,
+                            controls=[
+                                ft.Text('Выбранные категории:', style=LABEL_STYLE_TEXT),
+                                self.in_category
+                            ]
+                        )
+                    ),
+                    ft.Container(
+                        expand=3,
+                        border=ft.border.all(1, ft.colors.GREY_600),
+                        border_radius=ft.border_radius.all(5),
+                        content=ft.Column(
+                            spacing=1,
+                            controls=[
+                                ft.Text('Выберите категории:', style=LABEL_STYLE_TEXT),
+                                self.all_category
+                            ]
+                        )
+                    )
+                ]),
             ft.IconButton(ft.Icons.ADD, on_click=self.add_click)
 
         ]
@@ -144,7 +149,8 @@ class Products(MainApp):
         )
         container.content = ft.Column(
             controls=[
-                RowProduct(),
+                ft.Container(content=RowProduct(), expand=6, border_radius=ft.border_radius.all(5),
+                             border=ft.border.all(4, ft.colors.GREY_600)),
                 ft.Container(expand=6),
                 ft.Container(expand=6)
             ]

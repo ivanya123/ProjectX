@@ -65,7 +65,8 @@ categories = [
     FakeCategory(4, 'закуски')
 ]
 
-fake_products = [FakeProduct(i, f'Продукт_{i}', 'весовой', [random.choice(categories)]) for i in range(50)]
+fake_products = [FakeProduct(id=i, name=f'Продукт_{i}', type_='весовой', category=[random.choice(categories)])
+                 for i in range(50)]
 
 
 class FilterRow(ft.Row):
