@@ -3,7 +3,7 @@ from collections.abc import Callable
 import flet as ft
 from flet_route import Params, Basket
 
-from app.pages import FakeCategory, categories, FakeProduct
+from app.pages import FakeCategory, categories, FakeProduct, fake_products
 from app.pages.mainapp import MainApp
 
 from app.styles import *
@@ -14,7 +14,7 @@ class ContainerCategory(ft.Container):
         super().__init__()
         self.category = category
         self.blur = ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP)
-        self.content = ft.Text(category.name, style=LABEL_STYLE_TEXT)
+        self.content = ft.Text(category.name, style=MAIN_STYLE_TEXT)
         self.on_click = func_category
         self.ink = True
         self.padding = 0
@@ -47,23 +47,26 @@ class FilterCategory(ft.Container):
 
 
 class RadioType(ft.RadioGroup):
-    def __init__(self):
+    def __init__(self, value: str = None):
         super().__init__(content=ft.Row())
         self.expand = 1
         self.content = ft.Row(
             spacing=0,
             alignment=ft.MainAxisAlignment.SPACE_AROUND,
             controls=[
-                ft.Radio(value='весовой', label='Весовой', label_style=LABEL_STYLE_TEXT),
-                ft.Radio(value='штучный', label='Штучный', label_style=LABEL_STYLE_TEXT),
-                ft.Radio(value='жидкость', label='Жидкий', label_style=LABEL_STYLE_TEXT)
+                ft.Radio(value='весовой', label='Весовой', label_style=MAIN_STYLE_TEXT),
+                ft.Radio(value='штучный', label='Штучный', label_style=MAIN_STYLE_TEXT),
+                ft.Radio(value='жидкость', label='Жидкий', label_style=MAIN_STYLE_TEXT)
             ]
         )
+        self.value = value
 
 
-class RowProduct(ft.Column):
+class ColumnAddProduct(ft.Column):
     def __init__(self):
         super().__init__()
+        self.id_product = None
+        self.border = ft.border.all(3, ft.colors.GREEN_900)
         self.expand = 3
         self.alignment = ft.MainAxisAlignment.SPACE_EVENLY
         self.radio_type = RadioType()
@@ -73,8 +76,8 @@ class RowProduct(ft.Column):
             right=True
         )
         self.text_name = ft.TextField(
-            hint_text='Название', hint_style=LABEL_STYLE_TEXT,
-            text_style=LABEL_STYLE_TEXT
+            hint_text='Название', hint_style=MAIN_STYLE_TEXT,
+            text_style=MAIN_STYLE_TEXT
         )
         self.controls = [
             ft.Container(
@@ -97,7 +100,7 @@ class RowProduct(ft.Column):
                         content=ft.Column(
                             spacing=1,
                             controls=[
-                                ft.Text('Выбранные категории:', style=LABEL_STYLE_TEXT),
+                                ft.Text('Выбранные категории:', style=MAIN_STYLE_TEXT),
                                 self.in_category
                             ]
                         )
@@ -109,13 +112,18 @@ class RowProduct(ft.Column):
                         content=ft.Column(
                             spacing=1,
                             controls=[
-                                ft.Text('Выберите категории:', style=LABEL_STYLE_TEXT),
+                                ft.Text('Выберите категории:', style=MAIN_STYLE_TEXT),
                                 self.all_category
                             ]
                         )
                     )
                 ]),
-            ft.IconButton(ft.Icons.ADD, on_click=self.add_click)
+            ft.Row(
+                controls=[
+                    ft.IconButton(ft.Icons.ADD, on_click=self.add_click),
+                    ft.IconButton(ft.Icons.CLEAR, on_click=self.clear_click)
+                ]
+            )
 
         ]
 
@@ -132,6 +140,7 @@ class RowProduct(ft.Column):
 
     def add_click(self, _: ft.ControlEvent):
         new_product: FakeProduct = FakeProduct(
+            id=self.id_product,
             name=self.text_name.value,
             type_=self.radio_type.value,
             category=[category.category for category in
@@ -139,20 +148,95 @@ class RowProduct(ft.Column):
         )
         print(new_product)
 
+    def clear_click(self, _: ft.ControlEvent):
+        self.id_product = None
+        self.text_name.value = ''
+        self.in_category.controls = []
+        self.all_category.controls = [ContainerCategory(category, self.go_category) for category in categories]
+        self.radio_type.value = None
+
+        self.parent.border=ft.border.all(4, ft.colors.GREY_600)
+        self.parent.update()
+
+    def edit_product(self, product: FakeProduct):
+        self.id_product = product.id
+        self.text_name.value = product.name
+        self.radio_type.value = product.type_
+        self.in_category.controls = (
+            [ContainerCategory(category, self.go_category) for category in product.category] if product.category else []
+        )
+        self.all_category.controls = (
+            [ContainerCategory(category, self.go_category)
+             for category in categories if category not in product.category] if product.category else [
+                ContainerCategory(category, self.go_category) for category in categories
+            ]
+        )
+        self.radio_type.value = product.type_
+
+        self.parent.border = ft.border.all(3, ft.colors.BLUE_900)
+        self.parent.update()
+
+
+class ProductRow(ft.Container):
+    def __init__(self, product: FakeProduct, edit_click: Callable):
+        super().__init__()
+        self.data = product
+        self.expand = 1
+        self.blur = ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP)
+        self.category_text = ', '.join(
+            category.name for category in product.category) if product.category else 'Без категории'
+        self.content = ft.Row(
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            controls=[
+                ft.Text(value=f'{product.id}: {product.name}', style=MAIN_STYLE_TEXT),
+                ft.Text(value=product.type_, style=MAIN_STYLE_TEXT),
+                ft.Text(value=self.category_text, style=MAIN_STYLE_TEXT),
+                ft.TextButton(on_click=edit_click, icon=ft.icons.EDIT),
+                ft.TextButton(on_click=self.delete_click, icon=ft.icons.DELETE, icon_color=ft.colors.RED_400)
+            ]
+        )
+
+    def delete_click(self, _: ft.ControlEvent):
+        pass
+
+
+class AllProducts(ft.Container):
+    def __init__(self, products: list[FakeProduct] = None, edit_click: Callable = None):
+        super().__init__()
+        self.expand = 6
+        self.padding = 10
+        self.blur = ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP)
+        self.content = ft.Column(
+            scroll=ft.ScrollMode.ALWAYS,
+            controls=[ProductRow(product, edit_click) for product in products] if products else []
+        )
+
 
 class Products(MainApp):
+    def __init__(self):
+        self.all_products = None
+        self.column_add_product: ColumnAddProduct = None
+
     def view(self, page: ft.Page, params: Params, basket: Basket):
         MainApp.view(self, page, params, basket)
         container = self.controls[-1]
         container.image = ft.DecorationImage(
             src="images/products_background.webp", repeat=ft.ImageRepeat.REPEAT
         )
+        self.column_add_product: ColumnAddProduct = ColumnAddProduct()
+        self.all_products = AllProducts(products=fake_products, edit_click=self.edit_click)
+
         container.content = ft.Column(
             controls=[
-                ft.Container(content=RowProduct(), expand=6, border_radius=ft.border_radius.all(5),
+                self.all_products,
+                ft.Container(content=self.column_add_product, expand=6, border_radius=ft.border_radius.all(5),
                              border=ft.border.all(4, ft.colors.GREY_600)),
-                ft.Container(expand=6),
                 ft.Container(expand=6)
             ]
         )
+
         return self.main_view
+
+    def edit_click(self, e: ft.ControlEvent):
+        container_product: ProductRow = e.control.parent.parent
+        self.column_add_product.edit_product(container_product.data)

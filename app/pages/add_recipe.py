@@ -21,6 +21,7 @@ row_add = ft.Row(
     alignment=ft.MainAxisAlignment.CENTER,
     controls=[
         ft.Container(expand=1, blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
+                     alignment=ft.alignment.center,
                      content=ft.Text("Добавить рецепт", color=ft.Colors.BLACK,
                                      italic=True, text_align=ft.TextAlign.CENTER,
                                      size=25, expand=1, height=100),
