@@ -1,4 +1,6 @@
 import sqlite3
+from pprint import pprint
+
 from create import cursor, conn
 from classes import Recipes, Products, Categories, Fridge
 from collections import defaultdict
@@ -57,4 +59,4 @@ def reading_recipes():
 
 
 if __name__ == '__main__':
-    reading_recipes()
+    pprint(reading_recipes())
