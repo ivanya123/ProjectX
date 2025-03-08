@@ -1,25 +1,29 @@
 from dataclasses import dataclass
+from typing import Optional
+
 
 @dataclass
 class Recipes:
-    id=None
-    name: str
-    description: str
+    id:int = None
+    name: str = ''
+    description: str = ''
+    product_list: list[tuple['Products', float]] = None
+
 
 @dataclass
 class Products:
-    id=None
-    name: str
-    product_type: str
-    category_id: int
+    id:int = None
+    name: str = ''
+    product_type: str = ''
+    category_list: Optional[list['Categories']] = None
 
 @dataclass
 class Categories:
-    id=None
-    name: str
+    id:int = None
+    name: str = ''
 
 @dataclass
 class Fridge:
-    id=None
-    products_id: int
-    amount: float
+    id:int = None
+    products: 'Products' = None
+    amount: float = 0.0
