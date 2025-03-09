@@ -1,5 +1,6 @@
 import flet as ft
 from flet_route import Params, Basket
+from database import *
 
 
 class LinkContainer(ft.Container):
@@ -31,10 +32,10 @@ class MainContainer(ft.Container):
         self.alignment = ft.alignment.center
         self.content = ft.Row(
             controls=[
-                LinkContainer('/', 'images/recipe.webp', page),
-                LinkContainer('/fridge', 'images/fridge.webp', page),
-                LinkContainer('/products', 'images/product.webp', page),
-                LinkContainer('/add_recipe', 'images/add_recipe.webp', page),
+                LinkContainer('/', 'images/recipe.jpg', page),
+                LinkContainer('/fridge', 'images/fridge.jpg', page),
+                LinkContainer('/products', 'images/product.jpg', page),
+                LinkContainer('/add_recipe', 'images/add_recipe.jpg', page),
             ],
             expand=True,
             alignment=ft.alignment.center,
@@ -44,7 +45,17 @@ class MainContainer(ft.Container):
 
 class MainApp:
 
+    def __init__(self):
+        self.all_recipes: list[Recipes] = reading_recipes()
+        self.all_products: list[Products] = reading_products()
+        self.all_categories: list[Categories] = reading_categories()
+        self.main_view = None
+        self.controls = None
+
     def view(self, page: ft.Page, params: Params, basket: Basket):
+        self.all_recipes: list[Recipes] = reading_recipes()
+        self.all_products: list[Products] = reading_products()
+        self.all_categories: list[Categories] = reading_categories()
         page.title = 'Кулинарная книга Ивана и Полины'
         self.controls = [
             MainContainer(page),
@@ -57,3 +68,18 @@ class MainApp:
         )
 
         return self.main_view
+
+    def update_data(self, obj=None):
+        if obj is None:
+            self.all_recipes = reading_recipes()
+            self.all_products = reading_products()
+            self.all_categories = reading_categories()
+        else:
+            if isinstance(obj, Recipes):
+                self.all_recipes = reading_recipes()
+            elif isinstance(obj, Products):
+                self.all_products = reading_products()
+            elif isinstance(obj, Categories):
+                self.all_categories = reading_categories()
+
+

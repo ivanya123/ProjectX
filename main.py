@@ -1,5 +1,6 @@
 import flet as ft
 from app.router import Router
+from database import *
 
 
 def main(page: ft.Page):
@@ -9,9 +10,9 @@ def main(page: ft.Page):
         'Caveat': 'fonts/Caveat-VariableFont_wght.ttf'
     }
     page.theme = ft.Theme(font_family='Caveat')
+
     Router(page)
 
 
 if __name__ == '__main__':
     ft.app(target=main, assets_dir="assets", view=ft.WEB_BROWSER)
-

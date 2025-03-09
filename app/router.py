@@ -2,8 +2,9 @@ import math
 
 import flet as ft
 from flet_route import Routing, path
-from app.pages import BookRecipe, Products, FridgePage, AddRecipe
+from app.pages import BookRecipe, ProductView, FridgePage, AddRecipe
 from app.styles import *
+from database import *
 
 
 class Router:
@@ -12,7 +13,7 @@ class Router:
         self.app_routes = [
             path(url="/", clear=True, view=BookRecipe().view),
             path(url="/fridge", clear=False, view=FridgePage().view),
-            path(url='/products', clear=False, view=Products().view),
+            path(url='/products', clear=False, view=ProductView().view),
             path(url='/add_recipe', clear=False, view=AddRecipe().view),
         ]
         MAIN_STYLE_TEXT.size = min(math.ceil(page.width / 20), 27) + 1

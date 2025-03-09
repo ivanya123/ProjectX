@@ -1,4 +1,4 @@
 from .book_recipe import *
 from .add_recipe import *
-from .products import *
+from .productview import *
 from .fridge import *

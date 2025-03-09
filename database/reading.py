@@ -1,12 +1,15 @@
 import sqlite3
 from pprint import pprint
 
-from create import cursor, conn
-from classes import Recipes, Products, Categories, Fridge
+from .create import cursor, conn
+from .classes import Recipes, Products, Categories, Fridge
 from collections import defaultdict
 
 
 def reading_recipes() -> list[Recipes]:
+    conn = sqlite3.connect("cooking.db")
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
     cursor.execute("""
         SELECT recipes.id, recipes.name, recipes.description,
                products.id, products.name, recipes_products.amount, products.type,
@@ -49,20 +52,28 @@ def reading_recipes() -> list[Recipes]:
                                       product_data['amount'])
                                      for product_id, product_data in data["products"].items()])
                for res_id, data in recipes_dict.items()]
+    conn.close()
     return recipes
 
 
 def reading_categories() -> list[Categories]:
+    conn = sqlite3.connect("cooking.db")
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
     cursor.execute("""
             SELECT categories.id, categories.name
             FROM categories
         """)
     rows = cursor.fetchall()
     categories = [Categories(id=row[0], name=row[1]) for row in rows]
+    conn.close()
     return categories
 
 
 def reading_products() -> list[Products]:
+    conn = sqlite3.connect("cooking.db")
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
     cursor.execute("""
             SELECT products.id, products.name, products.type,
                    categories.id, categories.name
@@ -90,6 +101,7 @@ def reading_products() -> list[Products]:
                                         for category_id, category_data in
                                         product_data['categories'].items()])
                 for product_id, product_data in products_dict.items()]
+    conn.close()
     return products
 
 
