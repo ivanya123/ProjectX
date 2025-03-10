@@ -1,33 +1,75 @@
-import math
-import random
-from collections.abc import Callable
-from dataclasses import dataclass
-from typing import Optional
-
 import flet as ft
 from flet.core.form_field_control import InputBorder
 from flet_route import Params, Basket
 
 from app.pages.mainapp import MainApp
 from app.styles import *
+from database import *
 
 
-def add_recipe():
-    pass
+def create_description(data: list[str]):
+    return '-&&-'.join(data)
 
 
-row_add = ft.Row(
-    expand=1,
-    alignment=ft.MainAxisAlignment.CENTER,
-    controls=[
-        ft.Container(expand=1, blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
-                     alignment=ft.alignment.center,
-                     content=ft.Text("Добавить рецепт", color=ft.Colors.BLACK,
-                                     italic=True, text_align=ft.TextAlign.CENTER,
-                                     size=25, expand=1, height=100),
-                     on_click=lambda _: add_recipe(), ink=True, ink_color='#b3a696')
-    ]
-)
+class ContainerAddEditRecipe(ft.Container):
+    def __init__(self, name_field: ft.TextField, desc_tabs: 'TabsDesc', products_container: 'ProductsContainer'):
+        super().__init__()
+        self.name_field = name_field
+        self.desc_tabs = desc_tabs
+        self.products_container = products_container
+        self.expand = 1
+        self.add_container = ft.Container(
+            expand=1, blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
+            content=ft.Text("Добавить рецепт", style=MAIN_STYLE_TEXT),
+            on_click=lambda _: self.add_recipe(),
+            ink=True,
+            ink_color='#b3a696'
+        )
+        self.edit_container = ft.Container(
+            expand=1,
+            blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
+            content=ft.Text("Редактировать рецепт", style=MAIN_STYLE_TEXT),
+            on_click=lambda _: self.edit_recipe(),
+            ink=True,
+            ink_color='#b3a696'
+        )
+        self.clear_container = ft.Container(
+            expand=1,
+            blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
+            content=ft.Text("Очистить форму", style=MAIN_STYLE_TEXT),
+            on_click=lambda _: self.clear_form(),
+            ink=True,
+            ink_color='#b3a696'
+        )
+        self.content = ft.Row(
+            controls=[
+                self.add_container,
+                self.edit_container,
+                self.clear_container
+            ]
+        )
+
+    def add_recipe(self):
+        name = self.name_field.value
+        desc = create_description(self.desc_tabs.data_)
+        list_products = self.products_container.data_
+        new_recipe = Recipes(
+            name=name,
+            description=desc,
+            product_list=list_products
+        )
+        add_in_recipes(new_recipe)
+        self.name_field.value = ''
+        self.page.update()
+        # self.desc_tabs.clear()
+        # self.products_container.clear()
+
+    def edit_recipe(self):
+        pass
+
+    def clear_form(self):
+        pass
+
 
 container_name = ft.Container(expand=2,
                               content=ft.TextField(hint_text='Введите название рецепта',
@@ -44,83 +86,51 @@ container_name = ft.Container(expand=2,
                               border_radius=5)
 
 
-@dataclass
-class FakeProduct:
-    name: str
-    id: int = None
-    type_: str = 'весовой'
-    category: Optional[list['FakeCategory']] = None
-
-
-@dataclass
-class FakeCategory:
-    id: int
-    name: str
-    products: Optional[list[FakeProduct]] = None
-
-
-categories = [
-    FakeCategory(1, 'молочка'),
-    FakeCategory(2, 'мясная'),
-    FakeCategory(3, 'овощная'),
-    FakeCategory(4, 'закуски')
-]
-
-fake_products = [FakeProduct(id=i, name=f'Продукт_{i}', type_='весовой', category=[random.choice(categories)])
-                 for i in range(50)]
-
-
-class FilterRow(ft.Row):
-    def __init__(self, change_filter: Callable):
+class FilterProductsRow(ft.Container):
+    def __init__(self, column_products: 'AllProducts'):
         super().__init__()
-        self.expand = 2
-        self.alignment = ft.MainAxisAlignment.SPACE_BETWEEN
-        self.controls_ = [ft.DropdownOption(key=0,
-                                            content=ft.Text('Все категории', style=MAIN_STYLE_TEXT),
-                                            text='Все',
-                                            style=MAIN_STYLE_TEXT)]
-        self.controls_.extend([ft.DropdownOption(key=f'{category.id}',
-                                                 content=ft.Text(f'{category.name}',
-                                                                 style=MAIN_STYLE_TEXT),
-                                                 text=f'{category.name}', style=MAIN_STYLE_TEXT)
-                               for category in categories])
-        self.dropdown = ft.Dropdown(
-            expand=1,
-            enable_filter=True,
-            enable_search=True,
-            dense=True,
-            content_padding=0,
-            label='Категория',
-            label_style=LABEL_STYLE_TEXT,
-            text_style=MAIN_STYLE_TEXT,
-            border=ft.border.symmetric(horizontal=ft.border.BorderSide(1, '#b3a696')),
-            border_width=1,
-            options=self.controls_,
-            on_change=change_filter
+        self.expand = 1
+        self.column_products = column_products
+        self.blur = ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP)
+        self.text_filter = ft.TextField(hint_text='Фильтр по названию', hint_style=HINT_STYLE_TEXT,
+                                        text_style=MAIN_STYLE_TEXT, expand=2, on_change=self.filter)
+        self.list_checkbox = [ft.Checkbox(label=f'{category.name}', value=False, on_change=self.filter) for
+                              category in reading_categories()]
+        self.text_categories = ft.Text(value='Категории: ', style=MAIN_STYLE_TEXT, expand=3)
+        self.content = ft.Row(
+            controls=[
+                self.text_filter,
+                self.text_categories,
+                ft.PopupMenuButton(
+                    items=[
+                        ft.PopupMenuItem(
+                            content=ft.Column(
+                                controls=self.list_checkbox
+                            )
+                        )
+                    ]
+                )
+            ]
         )
-
-        self.container_dropdown = ft.Container(
-            expand=1,
-            margin=ft.margin.only(top=5),
-            blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
-            alignment=ft.alignment.center,
-            content=self.dropdown
-        )
-        self.textfield = ft.TextField(expand=1, hint_text='Фильтрация по названию', label='Фильтр',
-                                      on_change=change_filter, hint_style=MAIN_STYLE_TEXT, text_style=MAIN_STYLE_TEXT,
-                                      label_style=LABEL_STYLE_TEXT)
-        self.controls: list[ft.Dropdown, ft.TextField] = [
-            self.container_dropdown,
-            self.textfield
-        ]
 
     @property
-    def data_(self):
-        return self.dropdown.value, self.textfield.value
+    def data_filter(self):
+        return {
+            'category': [checkbox.label for checkbox in self.list_checkbox if checkbox.value],
+            'name': self.text_filter.value.strip()
+        }
+
+    def filter(self, e: ft.ControlEvent):
+        control = e.control
+        if isinstance(control, ft.Checkbox):
+            self.text_categories.value = f"Категории: {', '.join(checkbox.label for checkbox
+                                                                 in self.list_checkbox if checkbox.value)}"
+        self.update()
+        self.column_products.filter(self.data_filter)
 
 
 class AddProductRow(ft.Row):
-    def __init__(self, product: FakeProduct, column: ft.Column):
+    def __init__(self, product: Products, column: ft.Column):
         super().__init__()
         self.product = product
         self.column = column
@@ -148,8 +158,10 @@ class AddProductRow(ft.Row):
 
 
 class AllProducts(ft.Column):
-    def __init__(self, products: list[FakeProduct], column: ft.Column):
+    def __init__(self, products: list[Products], column: ft.Column):
         super().__init__()
+        self.products = products
+        self.column_recipes = column
         self.expand = 8
         self.scroll = ft.ScrollMode.ALWAYS
         self.spacing = 3
@@ -158,9 +170,23 @@ class AllProducts(ft.Column):
         ]
         self.controls = list_products
 
+    def filter(self, data_filter: dict):
+        filter_products = [p for p in self.products]
+
+        if data_filter['name']:
+            filter_products = [p for p in filter_products if data_filter['name'].lower() in p.name.lower()]
+
+        if data_filter['category']:
+            category_set = set(data_filter['category'])
+            filter_products = [p for p in filter_products if
+                               category_set.intersection({cat.name for cat in p.category_list})]
+
+        self.controls = [AddProductRow(p, self.column_recipes) for p in filter_products]
+        self.update()
+
 
 class ProductRow(ft.Row):
-    def __init__(self, product: FakeProduct):
+    def __init__(self, product: Products):
         super().__init__()
         self.parent: ft.Column
         self.product = product
@@ -211,27 +237,26 @@ class ProductRow(ft.Row):
 
 
 class ProductsContainer(ft.Container):
-    def __init__(self):
+    def __init__(self, products: list[Products]):
         super().__init__()
         self.expand = 7
         self.border = ft.border.all(0)
         self.alignment = ft.alignment.top_center
-        self.column = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True, controls=[],
-                                alignment=ft.MainAxisAlignment.START, spacing=3)
-        self.all_products = [AddProductRow(product, self.column) for product in fake_products]
-        self.products_row = AllProducts(fake_products, self.column)
-        self.filter = FilterRow(self.change_filter)
+        self.column_recipes = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True, controls=[],
+                                        alignment=ft.MainAxisAlignment.START, spacing=3)
+        self.all_products_container = AllProducts(products, self.column_recipes)
+        self.filter_row = FilterProductsRow(self.all_products_container)
         self.column_all_products = ft.Column(
             controls=[
-                self.filter,
-                self.products_row
+                self.filter_row,
+                self.all_products_container
             ]
         )
         self.content = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.START,
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             spacing=1,
-            controls=[self.column,
+            controls=[self.column_recipes,
                       ft.Container(
                           expand=1,
                           content=self.column_all_products
@@ -239,18 +264,15 @@ class ProductsContainer(ft.Container):
 
         )
 
-    def change_filter(self, _: ft.ControlEvent):
-        category_filter, text_filter = self.filter.data_
-        new_products = self.all_products.copy()
-        if category_filter:
-            if int(category_filter):
-                new_products = [product for product in new_products if
-                                product.data_.category[0].id == int(category_filter)]
-        if text_filter:
-            new_products = [product for product in new_products if
-                            text_filter.lower() in product.data_.name.lower()]
-        self.products_row.controls = new_products
-        self.products_row.update()
+    @property
+    def data_(self):
+        try:
+            products = [(row.data_[0], float(row.data_[1]))
+                        for row in self.column_recipes.controls if isinstance(row, ProductRow)]
+        except ValueError:
+            print('Не удалось преобразовать кол-во')
+            return
+        return products
 
 
 class TabDesc(ft.Tab):
@@ -324,6 +346,10 @@ class TabsDesc(ft.Tabs):
 
 class AddRecipe(MainApp):
     def __init__(self):
+        super().__init__()
+        self.name_field = None
+        self.products_container = None
+        self.add_row = None
         self.container_name = None
         self.my_tabs = None
 
@@ -333,19 +359,34 @@ class AddRecipe(MainApp):
         container.image = ft.DecorationImage(
             src="images/add_recipe_background.webp", repeat=ft.ImageRepeat.REPEAT
         )
-        self.container_name = container_name
+        self.name_field = ft.TextField(hint_text='Введите название рецепта',
+                                       hint_style=MAIN_STYLE_TEXT,
+                                       label='Название рецепта',
+                                       label_style=LABEL_STYLE_TEXT,
+                                       text_style=MAIN_STYLE_TEXT,
+                                       border=InputBorder.NONE,
+                                       multiline=True,
+                                       max_lines=2)
+        self.container_name = ft.Container(expand=2,
+                                           content=self.name_field,
+                                           blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.CLAMP),
+                                           alignment=ft.alignment.top_right,
+                                           border=ft.border.all(1, '#b3a696'),
+                                           border_radius=5)
         self.my_tabs = TabsDesc()
+        self.products_container = ProductsContainer(products=self.all_products)
+        self.add_row = ContainerAddEditRecipe(self.name_field, self.my_tabs, self.products_container)
 
         container.content = ft.Column(
             controls=[self.container_name,
                       self.my_tabs,
-                      ProductsContainer(),
-                      row_add]
+                      self.products_container,
+                      self.add_row]
         )
 
         def func(e):
             if e.key == 'Q':
-                print(self.my_tabs.data_)
+                print(self.products_container.data_)
 
         page.on_keyboard_event = func
 

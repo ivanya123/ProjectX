@@ -16,7 +16,7 @@ class LinkContainer(ft.Container):
         self.on_click = lambda _: page.go(link)
         self.content = ft.Image(
             src=source,
-            filter_quality=ft.FilterQuality.NONE,
+            filter_quality=ft.FilterQuality.HIGH,
             border_radius=10,
             fit=ft.ImageFit.COVER,
             repeat=ft.ImageRepeat.REPEAT,

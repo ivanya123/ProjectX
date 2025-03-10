@@ -10,19 +10,19 @@ def add_in_recipes(recipes: Recipes):
     try:
         cursor.execute("INSERT INTO recipes (name, description) VALUES (?, ?)", (recipes.name, recipes.description))
         recipes_id = cursor.lastrowid
-        add_in_recipes_products(recipes_id, recipes.product_list)
-    except sqlite3.OperationalError:
-        print('Нет таблицы recipes')
+        add_in_recipes_products(recipes_id, recipes.product_list, cursor, conn)
+    except sqlite3.OperationalError as e:
+        print(f'Нет таблицы recipes {e}')
+    finally:
+        conn.close()
 
 
-def add_in_recipes_products(recipes_id: int, product_list: list[tuple['Products', float]]):
-    conn = sqlite3.connect("cooking.db")
-    conn.execute("PRAGMA foreign_keys = ON")
-    cursor = conn.cursor()
+def add_in_recipes_products(recipes_id: int, product_list: list[tuple['Products', float]], cursor, conn):
     for row in product_list:
         cursor.execute("INSERT INTO recipes_products (recipes_id, products_id, amount) VALUES (?, ?, ?)",
                        (recipes_id, row[0].id, row[1]))
-        conn.commit()
+    conn.commit()
+
 
 
 def add_in_products(products: Products):

@@ -41,7 +41,7 @@ class FilterCategory(ft.Container):
     def __init__(self, change: Callable):
         super().__init__()
         self.expand = 1
-        self.text_ = ft.TextField(hint_text='Фильтр по названию', hint_style=MAIN_STYLE_TEXT,
+        self.text_ = ft.TextField(hint_text='Фильтр по названию', hint_style=HINT_STYLE_TEXT,
                                   text_style=MAIN_STYLE_TEXT, on_change=change)
         self.content = self.text_
 
@@ -50,13 +50,13 @@ class RadioType(ft.RadioGroup):
     def __init__(self, value: str = None):
         super().__init__(content=ft.Row())
         self.expand = 1
-        self.content = ft.Row(
+        self.content = ft.Column(
             spacing=0,
-            alignment=ft.MainAxisAlignment.SPACE_AROUND,
+            alignment=ft.MainAxisAlignment.START,
             controls=[
-                ft.Radio(value='весовой', label='Весовой', label_style=MAIN_STYLE_TEXT),
-                ft.Radio(value='штучный', label='Штучный', label_style=MAIN_STYLE_TEXT),
-                ft.Radio(value='жидкость', label='Жидкий', label_style=MAIN_STYLE_TEXT)
+                ft.Radio(value='весовой', label='Весовой', label_style=LABEL_STYLE_TEXT),
+                ft.Radio(value='штучный', label='Штучный', label_style=LABEL_STYLE_TEXT),
+                ft.Radio(value='жидкость', label='Жидкий', label_style=LABEL_STYLE_TEXT)
             ]
         )
         self.value = value
@@ -78,23 +78,24 @@ class ColumnAddProduct(ft.Column):
             right=True
         )
         self.text_name = ft.TextField(
-            hint_text='Название', hint_style=MAIN_STYLE_TEXT,
+            hint_text='Название продукта', hint_style=HINT_STYLE_TEXT,
             text_style=MAIN_STYLE_TEXT
         )
         self.controls = [
             ft.Container(
-                expand=2,
+                expand=1,
                 blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
                 content=self.text_name,
             ),
-            ft.Container(
-                expand=2,
-                blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
-                content=self.radio_type
-            ),
+
             ft.Row(
-                expand=3,
+                expand=5,
                 controls=[
+                    ft.Container(
+                        expand=2,
+                        blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
+                        content=self.radio_type
+                    ),
                     ft.Container(
                         expand=3,
                         border=ft.border.all(1, ft.colors.GREY_600),
@@ -102,7 +103,8 @@ class ColumnAddProduct(ft.Column):
                         content=ft.Column(
                             spacing=1,
                             controls=[
-                                ft.Text('Выбранные категории:', style=MAIN_STYLE_TEXT),
+                                ft.Text('Выбранные категории:', style=MAIN_STYLE_TEXT,
+                                        bgcolor=ft.Colors.ORANGE_200),
                                 self.in_category
                             ]
                         )
@@ -114,13 +116,16 @@ class ColumnAddProduct(ft.Column):
                         content=ft.Column(
                             spacing=1,
                             controls=[
-                                ft.Text('Выберите категории:', style=MAIN_STYLE_TEXT),
+                                ft.Text('Выберите категории:', style=MAIN_STYLE_TEXT,
+                                        bgcolor=ft.Colors.ORANGE_200),
                                 self.all_category
                             ]
                         )
                     )
                 ]),
             ft.Row(
+                vertical_alignment=ft.CrossAxisAlignment.START,
+                expand=1,
                 controls=[
                     ft.IconButton(ft.Icons.ADD, on_click=lambda e: self.add_click(e, column_products)),
                     ft.IconButton(ft.Icons.CLEAR, on_click=self.clear_click)
@@ -182,7 +187,7 @@ class ColumnAddProduct(ft.Column):
                                       for category in self.categories]
         self.radio_type.value = None
 
-        self.parent.border = ft.border.all(4, ft.colors.GREY_600)
+        self.parent.border = ft.border.all(4, ft.colors.ORANGE_200)
         self.parent.update()
 
     def edit_product(self, product: Products):
@@ -270,7 +275,7 @@ class FilterProductsRow(ft.Container):
         self.expand = 1
         self.column_products = column_products
         self.blur = ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP)
-        self.text_filter = ft.TextField(hint_text='Фильтр по названию', hint_style=MAIN_STYLE_TEXT,
+        self.text_filter = ft.TextField(hint_text='Фильтр по названию', hint_style=HINT_STYLE_TEXT,
                                         text_style=MAIN_STYLE_TEXT, expand=2, on_change=self.filter)
         self.list_checkbox = [ft.Checkbox(label=f'{category.name}', value=False, on_change=self.filter) for
                               category in reading_categories()]
@@ -343,7 +348,7 @@ class AllProducts(ft.Container):
         filter_products = [p for p in self.products]
 
         if data_filter['name']:
-            filter_products = [p for p in filter_products if data_filter['name'] in p.name]
+            filter_products = [p for p in filter_products if data_filter['name'].lower() in p.name.lower()]
 
         if data_filter['category']:
             category_set = set(data_filter['category'])
@@ -358,14 +363,19 @@ class RowAddCategory(ft.Row):
     def __init__(self, column_add_product: ColumnAddProduct):
         super().__init__()
         self.expand = 1
-        self.name_field = ft.TextField(hint_text='Название', hint_style=MAIN_STYLE_TEXT, text_style=MAIN_STYLE_TEXT,
+        self.name_field = ft.TextField(hint_text='Название категории', hint_style=HINT_STYLE_TEXT,
+                                       text_style=MAIN_STYLE_TEXT,
                                        expand=True)
+        self.alignment = ft.MainAxisAlignment.START
         self.controls = [
             self.name_field,
             ft.TextButton(on_click=lambda _: self.add_click(_), icon=ft.icons.ADD,
                           height=MAIN_STYLE_TEXT.size, tooltip='Добавить категорию', text='Добавить категорию',
-                          style=ft.ButtonStyle(icon_size=MAIN_STYLE_TEXT.size, text_style=MAIN_STYLE_TEXT,
-                                               color=ft.Colors.WHITE, icon_color=ft.colors.WHITE),
+                          style=ft.ButtonStyle(text_style=MAIN_STYLE_TEXT,
+                                               color=ft.Colors.WHITE,
+                                               icon_color=ft.colors.WHITE,
+                                               icon_size=MAIN_STYLE_TEXT.size,
+                                               alignment=ft.alignment.top_left),
                           expand=True)
         ]
         self.column_add_product = column_add_product
@@ -409,12 +419,14 @@ class ProductView(MainApp):
         self.filter_row = FilterProductsRow(self.all_products_row)
 
         container.content = ft.Column(
+            spacing=0,
             controls=[
                 self.filter_row,
                 self.all_products_row,
                 ft.Container(content=self.column_add_product, expand=6, border_radius=ft.border_radius.all(5),
-                             border=ft.border.all(4, ft.colors.GREY_600)),
-                ft.Container(expand=3, border_radius=ft.border_radius.all(4),
+                             border=ft.border.all(4, ft.colors.ORANGE_200)),
+                ft.Container(expand=1, border_radius=ft.border_radius.all(4),
+                             border=ft.border.all(4, ft.colors.ORANGE_200),
                              content=RowAddCategory(self.column_add_product))
             ]
         )
