@@ -24,7 +24,6 @@ def add_in_recipes_products(recipes_id: int, product_list: list[tuple['Products'
     conn.commit()
 
 
-
 def add_in_products(products: Products):
     conn = sqlite3.connect("cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")

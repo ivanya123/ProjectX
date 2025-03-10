@@ -7,34 +7,76 @@ from app.styles import *
 from database import *
 
 
-def create_description(data: list[str]):
+def create_description(data: list[str]) -> str:
     return '-&&-'.join(data)
 
 
-class ContainerAddEditRecipe(ft.Container):
-    def __init__(self, name_field: ft.TextField, desc_tabs: 'TabsDesc', products_container: 'ProductsContainer'):
+def desc_to_list(data: str) -> list[str]:
+    return data.split('-&&-')
+
+
+class ColumnRecipes(ft.Column):
+    def __init__(self, list_recipes: list[Recipes], show_edit_recipe: callable):
         super().__init__()
+        self.expand = 1
+        self.list_recipes = list_recipes
+        self.scroll = ft.ScrollMode.ALWAYS
+        self.controls = [
+            ft.Container(
+                alignment=ft.alignment.center_left,
+                height=45,
+                border=ft.border.all(2, ft.Colors.BLUE_50),
+                border_radius=ft.border_radius.all(5),
+                margin=ft.margin.only(top=5),
+                data=recipe,
+                on_click=lambda e, recipes=recipe: show_edit_recipe(e, recipes),
+                content=ft.Text(recipe.name, style=MAIN_STYLE_TEXT),
+                ink=True,
+                ink_color='#b3a696'
+            ) for recipe in list_recipes
+        ]
+
+
+class BottomSheetRecipes(ft.BottomSheet):
+    def __init__(self, list_recipes: list[Recipes], show_edit_recipe: callable):
+        super().__init__(ft.Container())
+        self.maintain_bottom_view_insets_padding = True
+        self.expand = 1
+        self.list_recipes = list_recipes
+        self.show_edit_recipe = show_edit_recipe
+        self.expand = 1
+        self.elevation = 10.0
+        self.shape = ft.ContinuousRectangleBorder(radius=10)
+        self.content = ColumnRecipes(self.list_recipes, self.show_edit_recipe)
+
+
+class ContainerAddEditRecipe(ft.Container):
+    def __init__(self, name_field: ft.TextField, desc_tabs: 'TabsDesc', products_container: 'ProductsContainer',
+                 list_recipes: list[Recipes]):
+        super().__init__()
+        self.bottom_sheet = None
+        self.recipe = None
+        self.list_recipes = list_recipes
+        self.data = None
         self.name_field = name_field
         self.desc_tabs = desc_tabs
         self.products_container = products_container
         self.expand = 1
         self.add_container = ft.Container(
-            expand=1, blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
+            blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
             content=ft.Text("Добавить рецепт", style=MAIN_STYLE_TEXT),
             on_click=lambda _: self.add_recipe(),
             ink=True,
             ink_color='#b3a696'
         )
         self.edit_container = ft.Container(
-            expand=1,
             blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
             content=ft.Text("Редактировать рецепт", style=MAIN_STYLE_TEXT),
-            on_click=lambda _: self.edit_recipe(),
+            on_click=lambda _: self.edit_recipe_container(),
             ink=True,
             ink_color='#b3a696'
         )
         self.clear_container = ft.Container(
-            expand=1,
             blur=ft.Blur(1, 50, tile_mode=ft.BlurTileMode.MIRROR),
             content=ft.Text("Очистить форму", style=MAIN_STYLE_TEXT),
             on_click=lambda _: self.clear_form(),
@@ -42,6 +84,7 @@ class ContainerAddEditRecipe(ft.Container):
             ink_color='#b3a696'
         )
         self.content = ft.Row(
+            alignment=ft.MainAxisAlignment.START,
             controls=[
                 self.add_container,
                 self.edit_container,
@@ -49,26 +92,64 @@ class ContainerAddEditRecipe(ft.Container):
             ]
         )
 
+    def show_alert(self, message: str):
+        alert_dialog = ft.AlertDialog(
+            title=ft.Text(message),
+            on_dismiss=None,
+        )
+
+        self.page.open(alert_dialog)
+
+    def valid_form(self, name: str, desc: str, list_products: list[Products]) -> bool:
+        if not name:
+            self.show_alert("Введите название рецепта")
+            return False
+        if not desc.strip():
+            self.show_alert("Некорректно введены этапы приготовления")
+            return False
+        if not list_products:
+            self.show_alert("Добавьте продукты в список")
+            return False
+        return True
+
     def add_recipe(self):
-        name = self.name_field.value
+        name = self.name_field.value.strip()
         desc = create_description(self.desc_tabs.data_)
         list_products = self.products_container.data_
-        new_recipe = Recipes(
-            name=name,
-            description=desc,
-            product_list=list_products
-        )
-        add_in_recipes(new_recipe)
-        self.name_field.value = ''
-        self.page.update()
-        # self.desc_tabs.clear()
-        # self.products_container.clear()
+        if self.valid_form(name=name, desc=desc, list_products=list_products):
+            new_recipe = Recipes(
+                name=name,
+                description=desc,
+                product_list=list_products
+            )
+            add_in_recipes(new_recipe)
+            self.clear_form()
 
-    def edit_recipe(self):
-        pass
+    def edit_recipe_container(self):
+        self.bottom_sheet = BottomSheetRecipes(self.list_recipes, self.show_edit_recipe)
+        self.page.open(self.bottom_sheet)
 
     def clear_form(self):
-        pass
+        self.recipe = None
+        self.add_container.on_click = lambda _: self.add_recipe()
+        self.add_container.content = ft.Text("Добавить рецепт", style=MAIN_STYLE_TEXT)
+        self.name_field.value = ''
+        self.desc_tabs.clear()
+        self.products_container.clear()
+        self.page.update()
+
+    def show_edit_recipe(self, _, recipe: Recipes):
+        self.recipe = recipe
+        self.name_field.value = self.recipe.name
+        self.desc_tabs.show_edit_recipe(self.recipe.description)
+        self.products_container.column_recipes.controls = [ProductRow(product) for product in self.recipe.product_list]
+        self.add_container.on_click = self.edit_recipe
+        self.add_container.content = ft.Text("Подтвердить изменения", style=MAIN_STYLE_TEXT)
+        self.page.close(self.bottom_sheet)
+        self.page.update()
+
+    def edit_recipe(self, _):
+        print(self.recipe)
 
 
 container_name = ft.Container(expand=2,
@@ -186,7 +267,7 @@ class AllProducts(ft.Column):
 
 
 class ProductRow(ft.Row):
-    def __init__(self, product: Products):
+    def __init__(self, product: Products | tuple[Products, float]):
         super().__init__()
         self.parent: ft.Column
         self.product = product
@@ -196,7 +277,7 @@ class ProductRow(ft.Row):
             blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
             alignment=ft.alignment.top_left,
             content=ft.Text(
-                value=f'{self.product.name}',
+                value=f'{self.product.name}' if isinstance(self.product, Products) else f'{self.product[0].name}',
                 style=MAIN_STYLE_TEXT
             )
         )
@@ -205,6 +286,8 @@ class ProductRow(ft.Row):
                                         expand_loose=True, expand=2,
                                         hint_style=MAIN_STYLE_TEXT,
                                         text_style=MAIN_STYLE_TEXT)
+        self.count_field.value = '' if isinstance(self.product, Products) else f"{self.product[1]}"
+
         self.controls = [
             self.container_product,
             ft.Container(
@@ -240,6 +323,7 @@ class ProductsContainer(ft.Container):
     def __init__(self, products: list[Products]):
         super().__init__()
         self.expand = 7
+        self.height = 300
         self.border = ft.border.all(0)
         self.alignment = ft.alignment.top_center
         self.column_recipes = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True, controls=[],
@@ -269,16 +353,31 @@ class ProductsContainer(ft.Container):
         try:
             products = [(row.data_[0], float(row.data_[1]))
                         for row in self.column_recipes.controls if isinstance(row, ProductRow)]
-        except ValueError:
-            print('Не удалось преобразовать кол-во')
+        except ValueError as e:
+            self.show_alert(f"Введите числовые значения в поля 'кол-во' {e.args[0]}")
             return
         return products
 
+    def clear(self):
+        self.column_recipes.controls.clear()
+        self.update()
+
+    def show_alert(self, message: str):
+        alert_dialog = ft.AlertDialog(
+            title=ft.Text(message),
+            on_dismiss=None,
+        )
+
+        self.page.open(alert_dialog)
+
 
 class TabDesc(ft.Tab):
-    def __init__(self, tabs: 'TabsDesc', **kwargs):
+    def __init__(self, tabs: 'TabsDesc', clear=False, **kwargs):
         super().__init__(**kwargs)
-        self.text = len(tabs.tabs) - 1 if len(tabs.tabs) else 1
+        if not clear:
+            self.text = len(tabs.tabs) - 1 if len(tabs.tabs) else 1
+        else:
+            self.text = 1
         self.text_style = TAB_STYLE_TEXT
         self.textfield = ft.TextField(multiline=True,
                                       expand=True,
@@ -310,6 +409,7 @@ class TabsDesc(ft.Tabs):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.expand = 5
+        self.height = 250
         self.on_change = self.new_tab
         self.tabs: list[TabDesc] = [
             TabDesc(self),
@@ -318,30 +418,44 @@ class TabsDesc(ft.Tabs):
         ]
 
     def new_tab(self, _):
-        if self.selected_index == len(self.tabs) - 2:
-            self.tabs[-2] = TabDesc(self)
-            self.tabs[-1] = self.tab_add
-            self.tabs.append(self.tab_minus)
-            self.update()
-            for tab in self.tabs:
-                tab.update()
-                if tab.content:
-                    tab.content.update()
-            self.selected_index = len(self.tabs) - 3
-            self.update()
-        elif self.selected_index == len(self.tabs) - 1:
-            if len(self.tabs) == 3:
-                self.selected_index = 0
-                self.update()
-                return
-            self.tabs.pop()
-            self.tabs[-2] = self.tab_add
-            self.tabs[-1] = self.tab_minus
-            self.update()
+        if self.selected_index == len(self.tabs) - 2:  # Добавление новой вкладки
+            self.tabs.insert(-2, TabDesc(self))
+            self.selected_index = len(self.tabs) - 3  # Выбираем новую вкладку
+        elif self.selected_index == len(self.tabs) - 1:  # Удаление последней вкладки
+            if len(self.tabs) > 3:
+                self.tabs.pop(-3)
+                self.selected_index = max(0, len(self.tabs) - 3)  # Переключаемся на последнюю доступную вкладку
+            else:
+                self.selected_index = 0  # Если осталась только 1 вкладка, выбираем её
+
+        self.update()  # Однократное обновление UI
 
     @property
     def data_(self):
         return [tab.data_ for tab in self.tabs if tab if isinstance(tab, TabDesc)]
+
+    def clear(self):
+        self.tabs: list[TabDesc] = [
+            TabDesc(self, clear=True),
+            self.tab_add,
+            self.tab_minus
+        ]
+        self.update()
+
+    def show_edit_recipe(self, description):
+        self.clear()
+        list_desc = desc_to_list(description)
+
+        self.selected_index = 2
+        for i, desc in enumerate(list_desc):
+            self.new_tab(None)
+            if isinstance(self.tabs[-3], TabDesc):
+                self.tabs[-3].textfield.value = desc  # ✅ Заполняем вкладку данными
+                self.tabs[-3].update()  # ✅ Обновляем только изменённую вкладку
+            self.selected_index += 1
+
+        self.selected_index = 0
+        self.update()  # ✅ Обновляем UI после всех изменений
 
 
 class AddRecipe(MainApp):
@@ -375,7 +489,8 @@ class AddRecipe(MainApp):
                                            border_radius=5)
         self.my_tabs = TabsDesc()
         self.products_container = ProductsContainer(products=self.all_products)
-        self.add_row = ContainerAddEditRecipe(self.name_field, self.my_tabs, self.products_container)
+        self.add_row = ContainerAddEditRecipe(self.name_field, self.my_tabs, self.products_container,
+                                              self.all_recipes)
 
         container.content = ft.Column(
             controls=[self.container_name,

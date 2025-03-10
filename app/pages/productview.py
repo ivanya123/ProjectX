@@ -127,8 +127,9 @@ class ColumnAddProduct(ft.Column):
                 vertical_alignment=ft.CrossAxisAlignment.START,
                 expand=1,
                 controls=[
-                    ft.IconButton(ft.Icons.ADD, on_click=lambda e: self.add_click(e, column_products)),
-                    ft.IconButton(ft.Icons.CLEAR, on_click=self.clear_click)
+                    ft.IconButton(ft.Icons.ADD, on_click=lambda e: self.add_click(e, column_products),
+                                  tooltip='Добавить/изменить продукт'),
+                    ft.IconButton(ft.Icons.CLEAR, on_click=self.clear_click, tooltip='Очистить форму'),
                 ]
             )
 
@@ -273,6 +274,7 @@ class FilterProductsRow(ft.Container):
     def __init__(self, column_products: 'AllProducts'):
         super().__init__()
         self.expand = 1
+        self.height = 50
         self.column_products = column_products
         self.blur = ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP)
         self.text_filter = ft.TextField(hint_text='Фильтр по названию', hint_style=HINT_STYLE_TEXT,
@@ -316,6 +318,7 @@ class AllProducts(ft.Container):
     def __init__(self, products: list[Products] = None, edit_click: Callable = None):
         super().__init__()
         self.edit_click = edit_click
+        self.height = 300
         self.products = products
         self.expand = 6
         self.padding = 10
@@ -424,6 +427,7 @@ class ProductView(MainApp):
                 self.filter_row,
                 self.all_products_row,
                 ft.Container(content=self.column_add_product, expand=6, border_radius=ft.border_radius.all(5),
+                             height=300,
                              border=ft.border.all(4, ft.colors.ORANGE_200)),
                 ft.Container(expand=1, border_radius=ft.border_radius.all(4),
                              border=ft.border.all(4, ft.colors.ORANGE_200),

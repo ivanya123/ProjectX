@@ -31,6 +31,7 @@ class MainContainer(ft.Container):
         self.expand_loose = True
         self.alignment = ft.alignment.center
         self.content = ft.Row(
+            height=100,
             controls=[
                 LinkContainer('/', 'images/recipe.jpg', page),
                 LinkContainer('/fridge', 'images/fridge.jpg', page),
@@ -62,6 +63,7 @@ class MainApp:
             ft.Container(expand=18),
         ]
         self.main_view = ft.View(
+            scroll=ft.ScrollMode.ALWAYS,
             controls=self.controls,
             padding=ft.padding.all(0),
             spacing=0
