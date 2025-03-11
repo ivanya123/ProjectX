@@ -14,7 +14,8 @@ MAIN_STYLE_TEXT = ft.TextStyle(
 )
 LABEL_STYLE_TEXT = ft.TextStyle(
     italic=True, color=ft.Colors.WHITE,
-    size=16, weight=ft.FontWeight.W_700
+    size=16, weight=ft.FontWeight.W_700,
+    font_family="Caveat"
 )
 TAB_STYLE_TEXT = ft.TextStyle(
     color=ft.Colors.WHITE, size=28, weight=ft.FontWeight.W_900

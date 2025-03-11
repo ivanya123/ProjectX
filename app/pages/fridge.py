@@ -29,7 +29,6 @@ class ProductRow(ft.Row):
         super().__init__()
         self.fridge_row = fridge_row
         self.type = self.fridge_row.products.product_type
-
         self.vertical_alignment = ft.CrossAxisAlignment.START
         self.spacing = 5
         self.height = 40
@@ -118,9 +117,19 @@ class FilterProductsRow(ft.Container):
         self.list_checkbox = [ft.Checkbox(label=f'{category.name}', value=False, on_change=self.filter) for
                               category in reading_categories()]
         self.text_categories = ft.Text(value='Категории: ', style=MAIN_STYLE_TEXT, expand=3)
+
+        self.add_products_button = ft.TextButton(
+            text='Добавить продукт',
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5),
+                                 text_style=MAIN_STYLE_TEXT, color=ft.colors.WHITE),
+            icon=ft.icons.ADD,
+            icon_color=ft.colors.ORANGE_200,
+            on_click=self.add_product
+        )
         self.content = ft.Row(
             controls=[
                 self.text_filter,
+                self.add_products_button,
                 self.text_categories,
                 ft.PopupMenuButton(
                     items=[
@@ -133,6 +142,10 @@ class FilterProductsRow(ft.Container):
                 )
             ]
         )
+
+    def add_product(self, _):
+        sheet = BottomSheetAddProduct(self.all_fridge, reading_products())
+        self.page.open(sheet)
 
     @property
     def data_filter(self):
@@ -155,7 +168,7 @@ class FridgeHome(ft.Container):
         super().__init__()
         self.all_fridge_rows = all_fridge_rows
         self.expand = True
-        self.height = 800
+        self.height = 200
         self.border = ft.border.all(3, ft.colors.ORANGE_200)
         self.border_radius = 10
         self.padding = ft.padding.only(left=5, right=5, top=10, bottom=10)
@@ -163,6 +176,7 @@ class FridgeHome(ft.Container):
             ft.Container(
                 expand=True,
                 height=50,
+                key=fridge_row.id,
                 content=ProductRow(fridge_row),
                 border=ft.border.only(bottom=BorderSide(3, color=ft.Colors.ORANGE_200)),
 
@@ -206,17 +220,36 @@ class BottomSheetAddProduct(ft.BottomSheet):
             controls=[
                 ft.Container(
                     content=ft.Text(f'{prod.name}'),
-                    on_click=lambda _, product=prod: self.on_click_prod(product),
+                    on_click=lambda _, product=prod: self.on_click_prod(_, product),
                     ink=True,
                     ink_color=ft.colors.BLUE_300
                 ) for prod in list_products
             ]
         )
 
-    def on_click_prod(self, product: Products):
-        self.fridge_home.content.controls.append(
-            ProductRow(Fridge())
+    def on_click_prod(self, _, product: Products):
+        new_id = str(max([fridge.id for fridge in self.fridge_home.all_fridge_rows], default=0) + 1)
+        # TODO: Нужно сделать запись в базу данных.
+        new_fridge_row = Fridge(
+            id=int(new_id),
+            products=product,
+            amount=1.0
         )
+        new_row = ProductRow(new_fridge_row)
+        new_container = ft.Container(
+            expand=True,
+            height=50,
+            key=new_id,  # Указываем ключ
+            content=new_row,
+            border=ft.border.only(bottom=BorderSide(3, color=ft.Colors.ORANGE_200)),
+        )
+        self.fridge_home.content.controls.append(new_container)
+        self.fridge_home.content.update()
+        self.page.close(self)
+        self.page.update()
+        self.fridge_home.content.scroll_to(key=new_id, duration=1000)
+        new_row.text_amount.focus()
+        self.fridge_home.content.update()
 
 
 class FridgePage(MainApp):
