@@ -1,6 +1,6 @@
 import flet as ft
 from app.router import Router
-from database import *
+
 
 
 def main(page: ft.Page):
@@ -16,3 +16,4 @@ def main(page: ft.Page):
 
 if __name__ == '__main__':
     ft.app(target=main, assets_dir="assets")
+

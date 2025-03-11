@@ -50,6 +50,7 @@ class MainApp:
         self.all_recipes: list[Recipes] = reading_recipes()
         self.all_products: list[Products] = reading_products()
         self.all_categories: list[Categories] = reading_categories()
+        # self.all_fridge: list[Fridge]
         self.main_view = None
         self.controls = None
 
