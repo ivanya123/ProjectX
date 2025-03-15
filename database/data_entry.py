@@ -1,5 +1,5 @@
 import sqlite3
-from .classes import Recipes, Products, Categories, Fridge
+from classes import Recipes, Products, Categories, Fridge
 
 
 def add_in_recipes(recipes: Recipes):
@@ -65,7 +65,7 @@ def add_in_fridge(fridge: Fridge):
         print('Нет таблицы fridge')
 
 
-# fridge = Fridge(products=Products(id=3), amount = 0.1)
+# fridge = Fridge(products=Products(id=2), amount = 0.1)
 # add_in_fridge(fridge)
 
 if __name__ == '__main__':
