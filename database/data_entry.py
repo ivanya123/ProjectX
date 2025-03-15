@@ -1,5 +1,4 @@
 import sqlite3
-from .create import cursor, conn
 from .classes import Recipes, Products, Categories, Fridge
 
 
@@ -65,6 +64,9 @@ def add_in_fridge(fridge: Fridge):
     except sqlite3.OperationalError:
         print('Нет таблицы fridge')
 
+
+# fridge = Fridge(products=Products(id=3), amount = 0.1)
+# add_in_fridge(fridge)
 
 if __name__ == '__main__':
     pass

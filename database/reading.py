@@ -1,7 +1,7 @@
 import sqlite3
 from pprint import pprint
 
-from .create import cursor, conn
+
 from .classes import Recipes, Products, Categories, Fridge
 from collections import defaultdict
 
@@ -104,6 +104,65 @@ def reading_products() -> list[Products]:
     conn.close()
     return products
 
+def reading_fridge() -> list[Fridge]:
+    with sqlite3.connect("cooking.db") as conn:
+        conn.execute("PRAGMA foreign_keys = ON")
+        cursor = conn.cursor()
+
+        # Выполняем SQL-запрос
+        cursor.execute("""
+            SELECT fridge.id, fridge.amount, 
+                   products.id, products.name, products.type, 
+                   categories.id, categories.name
+            FROM fridge
+            LEFT JOIN products ON products.id = fridge.products_id
+            LEFT JOIN categories_products ON products.id = categories_products.products_id
+            LEFT JOIN categories ON categories.id = categories_products.categories_id;
+        """)
+        rows = cursor.fetchall()
+
+    # Группируем данные
+    fridge_dict = defaultdict(lambda: {"amount": None, "products": {}})
+
+    for fridge_id, fridge_amount, product_id, product_name, product_type, category_id, category_name in rows:
+        # Записываем количество продуктов в холодильнике
+        fridge_dict[fridge_id]["amount"] = fridge_amount
+
+        # Записываем продукт
+        if product_id not in fridge_dict[fridge_id]["products"]:
+            fridge_dict[fridge_id]["products"][product_id] = {
+                "name": product_name,
+                "product_type": product_type,
+                "categories": {}
+            }
+
+        # Записываем категории продукта
+        if category_id is not None:
+            fridge_dict[fridge_id]["products"][product_id]["categories"][category_id] = category_name
+
+    # Формируем список объектов Fridge
+    fridges = [
+        Fridge(
+            id=fridge_id,
+            amount=data["amount"],
+            products=[
+                Products(
+                    id=product_id,
+                    name=product_data["name"],
+                    product_type=product_data["product_type"],
+                    category_list=[
+                        Categories(id=category_id, name=category_name)
+                        for category_id, category_name in product_data["categories"].items()
+                    ]
+                )
+                for product_id, product_data in data["products"].items()
+            ]
+        )
+        for fridge_id, data in fridge_dict.items()
+    ]
+
+    return fridges
+
 
 if __name__ == '__main__':
-    pprint(reading_products())
+    pprint(reading_fridge())

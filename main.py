@@ -1,9 +1,11 @@
 import flet as ft
 from app.router import Router
+from database.create import new_bd
 
 
 
 def main(page: ft.Page):
+    new_bd()
     page.fonts = {
         'Pattaya': 'fonts/Pattaya-Regular.ttf',
         'Oranienbaum': 'fonts/Oranienbaum-Regular.ttf',
