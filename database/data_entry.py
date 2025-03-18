@@ -1,9 +1,9 @@
 import sqlite3
-from classes import Recipes, Products, Categories, Fridge
+from database.classes import Recipes, Products, Categories, Fridge
 
 
 def add_in_recipes(recipes: Recipes):
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     try:
@@ -24,7 +24,7 @@ def add_in_recipes_products(recipes_id: int, product_list: list[tuple['Products'
 
 
 def add_in_products(products: Products):
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     try:
@@ -42,12 +42,14 @@ def add_in_products(products: Products):
 
 
 def add_in_categories(categories: Categories):
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     try:
         cursor.execute("INSERT INTO categories (name) VALUES (?)", (categories.name,))
+        new_id = cursor.lastrowid
         conn.commit()
+        return new_id
     except sqlite3.OperationalError:
         print('Нет таблицы categories')
     finally:
@@ -55,14 +57,18 @@ def add_in_categories(categories: Categories):
 
 
 def add_in_fridge(fridge: Fridge):
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     try:
         cursor.execute("INSERT INTO fridge (products_id, amount) VALUES (?, ?)", (fridge.products.id, fridge.amount))
+        new_id_fridge = cursor.lastrowid
         conn.commit()
+        return new_id_fridge
     except sqlite3.OperationalError:
         print('Нет таблицы fridge')
+    finally:
+        conn.close()
 
 
 # fridge = Fridge(products=Products(id=2), amount = 0.1)

@@ -2,12 +2,12 @@ import sqlite3
 from pprint import pprint
 
 
-from .classes import Recipes, Products, Categories, Fridge
+from database.classes import Recipes, Products, Categories, Fridge
 from collections import defaultdict
 
 
 def reading_recipes() -> list[Recipes]:
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute("""
@@ -57,7 +57,7 @@ def reading_recipes() -> list[Recipes]:
 
 
 def reading_categories() -> list[Categories]:
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute("""
@@ -71,7 +71,7 @@ def reading_categories() -> list[Categories]:
 
 
 def reading_products() -> list[Products]:
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute("""
@@ -105,7 +105,7 @@ def reading_products() -> list[Products]:
     return products
 
 def reading_fridge() -> list[Fridge]:
-    with sqlite3.connect("cooking.db") as conn:
+    with sqlite3.connect("app/data/cooking.db") as conn:
         conn.execute("PRAGMA foreign_keys = ON")
         cursor = conn.cursor()
 
@@ -156,7 +156,7 @@ def reading_fridge() -> list[Fridge]:
                     ]
                 )
                 for product_id, product_data in data["products"].items()
-            ]
+            ][0]
         )
         for fridge_id, data in fridge_dict.items()
     ]

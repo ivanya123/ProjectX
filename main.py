@@ -1,11 +1,12 @@
 import flet as ft
-from app.router import Router
-from database.create import new_bd
+from database import new_bd
 
+new_bd()
+
+from app.router import Router
 
 
 def main(page: ft.Page):
-    new_bd()
     page.fonts = {
         'Pattaya': 'fonts/Pattaya-Regular.ttf',
         'Oranienbaum': 'fonts/Oranienbaum-Regular.ttf',
@@ -17,5 +18,4 @@ def main(page: ft.Page):
 
 
 if __name__ == '__main__':
-    ft.app(target=main, assets_dir="assets")
-
+    ft.app(target=main, assets_dir="app/assets", port=5000)

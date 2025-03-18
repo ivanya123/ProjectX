@@ -3,7 +3,7 @@ import sqlite3
 
 # удалить все таблицы
 def deleting_tables():
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master "
@@ -16,7 +16,7 @@ def deleting_tables():
 
 
 def deleting_rows(table_name, id):
-    conn = sqlite3.connect("cooking.db")
+    conn = sqlite3.connect("app/data/cooking.db")
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute(f'DELETE FROM {table_name} WHERE id={id}')

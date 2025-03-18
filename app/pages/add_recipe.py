@@ -475,7 +475,7 @@ class AddRecipe(MainApp):
         )
         self.name_field = ft.TextField(hint_text='Введите название рецепта',
                                        hint_style=MAIN_STYLE_TEXT,
-                                       label='Название рецепта',
+                                       label='Название рецепта лучшего в мире',
                                        label_style=LABEL_STYLE_TEXT,
                                        text_style=MAIN_STYLE_TEXT,
                                        border=InputBorder.NONE,

@@ -12,16 +12,26 @@ def type_to_suffix(product_type: str):
         return 'шт.'
     elif product_type == 'весовой':
         return 'г.'
-    elif product_type == 'жидкий':
+    elif product_type == 'жидкость':
         return 'мл.'
 
 
 def validate_number(value):
     try:
-        float(value)
+        int(value)
         return True
     except ValueError:
         return False
+
+
+def max_slider_value(product_type: str):
+    if product_type == 'штучный':
+        return 30
+    elif product_type == 'весовой':
+        return 3000
+    elif product_type == 'жидкость':
+        return 3000
+
 
 
 class ProductRow(ft.Row):
@@ -34,6 +44,8 @@ class ProductRow(ft.Row):
         self.height = 40
         self.expand = True
         self.padding = ft.padding.only(left=10, right=10)
+        self.MAX_SLIDER_VALUE = max_slider_value(self.type)
+
 
         self.text_name = ft.Text(
             self.fridge_row.products.name,
@@ -42,7 +54,7 @@ class ProductRow(ft.Row):
         )
         self.slider = ft.Slider(
             min=0,
-            max=30 if self.type == 'штучный' else 3000,
+            max=self.MAX_SLIDER_VALUE if self.MAX_SLIDER_VALUE > self.fridge_row.amount else self.fridge_row.amount+1,
             value=self.fridge_row.amount,
             on_change=self.slider_change,
             expand=10
@@ -80,30 +92,93 @@ class ProductRow(ft.Row):
             ),
             self.slider,
             self.add_icon,
-            self.text_amount,
+            ft.Container(
+                expand=3,
+                alignment=ft.alignment.center_left,
+                blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
+                content=self.text_amount
+            ),
             self.remove_icon
         ]
 
     def slider_change(self, e):
+
         self.text_amount.value = f"{e.control.value:.0f}"
+        self.fridge_row.amount = self.slider.value
+        changing_fridge(self.fridge_row)
         self.text_amount.update()
 
     def text_amount_change(self, e):
         if validate_number(e.control.value):
-            self.slider.value = float(e.control.value)
+            if self.slider.max >= float(e.control.value) >= 0:
+                self.slider.value = float(e.control.value)
+                self.fridge_row.amount = self.slider.value
+                print('standart')
+
+            elif float(e.control.value) >= self.slider.max:
+                self.slider.max = int(e.control.value) + 1
+                self.slider.value = int(e.control.value)
+                print('increased')
+            elif self.MAX_SLIDER_VALUE <= int(e.control.value) <= self.slider.max:
+                self.slider.value = int(e.control.value)
+                self.slider.max = int(e.control.value) + 1
+                print('уменьшаем')
+            else:
+                self.page.open(DeleteDialog(self))
+            if int(e.control.value) <= self.MAX_SLIDER_VALUE:
+                self.slider.max = self.MAX_SLIDER_VALUE
+            self.fridge_row.amount = self.slider.value
+            changing_fridge(self.fridge_row)
             self.slider.update()
 
     def add_amount(self, _):
+        if self.slider.value + self.delta_amount >= self.MAX_SLIDER_VALUE:
+            self.slider.max = self.slider.value + self.delta_amount + 1
+
         self.slider.value += self.delta_amount
         self.text_amount.value = f"{self.slider.value:.0f}"
         self.text_amount.update()
         self.slider.update()
+        self.fridge_row.amount = self.slider.value
+        changing_fridge(self.fridge_row)
+
 
     def remove_amount(self, _):
-        self.slider.value -= self.delta_amount
-        self.text_amount.value = f"{self.slider.value:.0f}"
-        self.text_amount.update()
-        self.slider.update()
+        if self.slider.max > self.MAX_SLIDER_VALUE:
+            self.slider.max -= self.delta_amount
+
+        if self.slider.value - self.delta_amount > 0:
+            self.slider.value -= self.delta_amount
+            self.text_amount.value = f"{self.slider.value:.0f}"
+            self.text_amount.update()
+            self.slider.update()
+            self.fridge_row.amount = self.slider.value
+            changing_fridge(self.fridge_row)
+        else:
+            self.page.open(DeleteDialog(self))
+
+
+class DeleteDialog(ft.AlertDialog):
+    def __init__(self, row: ProductRow):
+        super().__init__()
+        self.modal = True
+        self.row = row
+        self.title = ft.Text('Удаление продукта из холодильника', style=MAIN_STYLE_TEXT)
+        self.content = ft.Text('Вы действительно хотите удалить продукт из холодильника?', style=MAIN_STYLE_TEXT)
+        self.actions = [
+            ft.TextButton('Удалить', on_click=self.delete),
+            ft.TextButton('Отмена', on_click=self.cancel)
+        ]
+
+    def delete(self, _):
+        deleteing_fridge(self.row.fridge_row.id)
+        self.page.close(self)
+        self.row.parent.parent.controls.remove(self.row.parent)
+        self.row.parent.parent.update()
+
+    def cancel(self, _):
+        self.page.update()
+        self.page.close(self)
 
 
 class FilterProductsRow(ft.Container):
@@ -168,7 +243,7 @@ class FridgeHome(ft.Container):
         super().__init__()
         self.all_fridge_rows = all_fridge_rows
         self.expand = True
-        self.height = 200
+        self.height = 800
         self.border = ft.border.all(3, ft.colors.ORANGE_200)
         self.border_radius = 10
         self.padding = ft.padding.only(left=5, right=5, top=10, bottom=10)
@@ -180,7 +255,7 @@ class FridgeHome(ft.Container):
                 content=ProductRow(fridge_row),
                 border=ft.border.only(bottom=BorderSide(3, color=ft.Colors.ORANGE_200)),
 
-            ) for fridge_row in all_fridge_rows
+            ) for fridge_row in self.all_fridge_rows
         ]
         self.content = ft.Column(
             scroll=ft.ScrollMode.ALWAYS,
@@ -203,14 +278,6 @@ class FridgeHome(ft.Container):
         self.content.update()
 
 
-# TODO: удалить после того как будет реализована логика базы данных.
-list_fridge = [Fridge(
-    id=i,
-    products=product,
-    amount=5.0
-) for i, product in enumerate(reading_products()) if i % 2 == 0]
-
-
 class BottomSheetAddProduct(ft.BottomSheet):
     def __init__(self, fridge_home: FridgeHome, list_products: list[Products]):
         super().__init__(ft.Container())
@@ -219,7 +286,7 @@ class BottomSheetAddProduct(ft.BottomSheet):
         self.content = ft.Column(
             controls=[
                 ft.Container(
-                    content=ft.Text(f'{prod.name}'),
+                    content=ft.Text(f'{prod.name}', style=MAIN_STYLE_TEXT),
                     on_click=lambda _, product=prod: self.on_click_prod(_, product),
                     ink=True,
                     ink_color=ft.colors.BLUE_300
@@ -228,28 +295,44 @@ class BottomSheetAddProduct(ft.BottomSheet):
         )
 
     def on_click_prod(self, _, product: Products):
-        new_id = str(max([fridge.id for fridge in self.fridge_home.all_fridge_rows], default=0) + 1)
-        # TODO: Нужно сделать запись в базу данных.
+        products_in_fridge = [cont.content.fridge_row.products.name for cont in self.fridge_home.content.controls]
         new_fridge_row = Fridge(
-            id=int(new_id),
             products=product,
             amount=1.0
         )
-        new_row = ProductRow(new_fridge_row)
-        new_container = ft.Container(
-            expand=True,
-            height=50,
-            key=new_id,  # Указываем ключ
-            content=new_row,
-            border=ft.border.only(bottom=BorderSide(3, color=ft.Colors.ORANGE_200)),
-        )
-        self.fridge_home.content.controls.append(new_container)
-        self.fridge_home.content.update()
-        self.page.close(self)
-        self.page.update()
-        self.fridge_home.content.scroll_to(key=new_id, duration=1000)
-        new_row.text_amount.focus()
-        self.fridge_home.content.update()
+        if product.name not in products_in_fridge:
+            new_id = add_in_fridge(new_fridge_row)
+            new_fridge_row.id = new_id
+            new_row = ProductRow(new_fridge_row)
+            new_container = ft.Container(
+                expand=True,
+                height=50,
+                key=new_id,  # Указываем ключ
+                content=new_row,
+                border=ft.border.only(bottom=BorderSide(3, color=ft.Colors.ORANGE_200)),
+            )
+            self.fridge_home.content.controls.append(new_container)
+            self.fridge_home.content.update()
+            self.page.close(self)
+            self.page.update()
+            self.fridge_home.content.scroll_to(key=new_id, duration=1000)
+            new_row.text_amount.focus()
+            self.fridge_home.content.update()
+        else:
+            new_row = None
+            for row in self.fridge_home.content.controls:
+                cont = row.content
+                if cont.fridge_row.products.name == product.name:
+                    new_row = cont
+                    new_id = cont.fridge_row.id
+                    break
+            else:
+                new_id = 1
+            self.page.close(self)
+            self.page.update()
+            self.fridge_home.content.scroll_to(key=new_id, duration=1000)
+            new_row.text_amount.focus()
+            self.fridge_home.content.update()
 
 
 class FridgePage(MainApp):
@@ -260,11 +343,12 @@ class FridgePage(MainApp):
 
     def view(self, page: ft.Page, params: Params, basket: Basket):
         MainApp.view(self, page, params, basket)
+        print(self.all_fridge)
         container = self.controls[-1]
         container.image = ft.DecorationImage(
             src="images/fridge_background.webp", repeat=ft.ImageRepeat.REPEAT
         )
-        self.fridge_home = FridgeHome(list_fridge)
+        self.fridge_home = FridgeHome(self.all_fridge)
         self.filter_products_row = FilterProductsRow(self.fridge_home)
         container.content = ft.Column(
             controls=[
