@@ -4,15 +4,9 @@ from flet_route import Params, Basket
 
 from app.pages.mainapp import MainApp
 from app.styles import *
+from app.utils import *
 from database import *
 
-
-def create_description(data: list[str]) -> str:
-    return '-&&-'.join(data)
-
-
-def desc_to_list(data: str) -> list[str]:
-    return data.split('-&&-')
 
 
 class ColumnRecipes(ft.Column):
@@ -41,13 +35,13 @@ class BottomSheetRecipes(ft.BottomSheet):
     def __init__(self, list_recipes: list[Recipes], show_edit_recipe: callable):
         super().__init__(ft.Container())
         self.maintain_bottom_view_insets_padding = True
-        self.expand = 1
+        self.size_constraints = ft.BoxConstraints(min_width=500)
         self.list_recipes = list_recipes
         self.show_edit_recipe = show_edit_recipe
-        self.expand = 1
+
         self.elevation = 10.0
         self.shape = ft.ContinuousRectangleBorder(radius=10)
-        self.content = ColumnRecipes(self.list_recipes, self.show_edit_recipe)
+        self.content = ColumnRecipes(reading_recipes(), self.show_edit_recipe)
 
 
 class ContainerAddEditRecipe(ft.Container):
@@ -149,7 +143,14 @@ class ContainerAddEditRecipe(ft.Container):
         self.page.update()
 
     def edit_recipe(self, _):
-        print(self.recipe)
+        new_recipe = Recipes(
+            id=self.recipe.id,
+            name=self.name_field.value,
+            description=create_description(self.desc_tabs.data_),
+            product_list=self.products_container.data_
+        )
+        changing_del_recipes(new_recipe)
+        self.clear_form()
 
 
 container_name = ft.Container(expand=2,
@@ -270,7 +271,7 @@ class ProductRow(ft.Row):
     def __init__(self, product: Products | tuple[Products, float]):
         super().__init__()
         self.parent: ft.Column
-        self.product = product
+        self.product = product if isinstance(product, Products) else product[0]
         self.expand = 1
         self.container_product = ft.Container(
             expand=3,
@@ -286,7 +287,7 @@ class ProductRow(ft.Row):
                                         expand_loose=True, expand=2,
                                         hint_style=MAIN_STYLE_TEXT,
                                         text_style=MAIN_STYLE_TEXT)
-        self.count_field.value = '' if isinstance(self.product, Products) else f"{self.product[1]}"
+        self.count_field.value = '' if isinstance(product, Products) else f"{product[1]}"
 
         self.controls = [
             self.container_product,
@@ -349,7 +350,7 @@ class ProductsContainer(ft.Container):
         )
 
     @property
-    def data_(self):
+    def data_(self) -> list[tuple[Products, float]]:
         try:
             products = [(row.data_[0], float(row.data_[1]))
                         for row in self.column_recipes.controls if isinstance(row, ProductRow)]

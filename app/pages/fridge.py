@@ -5,16 +5,7 @@ from flet_route import Params, Basket
 from app.pages.mainapp import MainApp
 from app.styles import *
 from database import *
-
-
-def type_to_suffix(product_type: str):
-    if product_type == 'штучный':
-        return 'шт.'
-    elif product_type == 'весовой':
-        return 'г.'
-    elif product_type == 'жидкость':
-        return 'мл.'
-
+from app.utils import type_to_suffix
 
 def validate_number(value):
     try:
@@ -33,7 +24,6 @@ def max_slider_value(product_type: str):
         return 3000
 
 
-
 class ProductRow(ft.Row):
     def __init__(self, fridge_row: Fridge):
         super().__init__()
@@ -46,7 +36,6 @@ class ProductRow(ft.Row):
         self.padding = ft.padding.only(left=10, right=10)
         self.MAX_SLIDER_VALUE = max_slider_value(self.type)
 
-
         self.text_name = ft.Text(
             self.fridge_row.products.name,
             style=MAIN_STYLE_TEXT,
@@ -54,7 +43,7 @@ class ProductRow(ft.Row):
         )
         self.slider = ft.Slider(
             min=0,
-            max=self.MAX_SLIDER_VALUE if self.MAX_SLIDER_VALUE > self.fridge_row.amount else self.fridge_row.amount+1,
+            max=self.MAX_SLIDER_VALUE if self.MAX_SLIDER_VALUE > self.fridge_row.amount else self.fridge_row.amount + 1,
             value=self.fridge_row.amount,
             on_change=self.slider_change,
             expand=10
@@ -71,14 +60,16 @@ class ProductRow(ft.Row):
         self.add_icon = ft.IconButton(
             expand=1,
             icon=ft.icons.ADD,
-            icon_color=ft.Colors.ORANGE_200,
+            icon_color=ft.Colors.BLUE_200,
             on_click=self.add_amount,
+            bgcolor=ft.colors.ORANGE_200
         )
         self.remove_icon = ft.IconButton(
             expand=1,
             icon=ft.icons.REMOVE,
-            icon_color=ft.Colors.ORANGE_200,
-            on_click=self.remove_amount
+            icon_color=ft.Colors.BLUE_200,
+            on_click=self.remove_amount,
+            bgcolor=ft.colors.ORANGE_200
         )
 
         self.delta_amount = 1 if self.type == 'штучный' else 50
@@ -91,14 +82,14 @@ class ProductRow(ft.Row):
                 content=self.text_name
             ),
             self.slider,
-            self.add_icon,
+            self.remove_icon,
             ft.Container(
                 expand=3,
                 alignment=ft.alignment.center_left,
                 blur=ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP),
                 content=self.text_amount
             ),
-            self.remove_icon
+            self.add_icon,
         ]
 
     def slider_change(self, e):
@@ -113,16 +104,15 @@ class ProductRow(ft.Row):
             if self.slider.max >= float(e.control.value) >= 0:
                 self.slider.value = float(e.control.value)
                 self.fridge_row.amount = self.slider.value
-                print('standart')
 
             elif float(e.control.value) >= self.slider.max:
                 self.slider.max = int(e.control.value) + 1
                 self.slider.value = int(e.control.value)
-                print('increased')
+
             elif self.MAX_SLIDER_VALUE <= int(e.control.value) <= self.slider.max:
                 self.slider.value = int(e.control.value)
                 self.slider.max = int(e.control.value) + 1
-                print('уменьшаем')
+
             else:
                 self.page.open(DeleteDialog(self))
             if int(e.control.value) <= self.MAX_SLIDER_VALUE:
@@ -141,7 +131,6 @@ class ProductRow(ft.Row):
         self.slider.update()
         self.fridge_row.amount = self.slider.value
         changing_fridge(self.fridge_row)
-
 
     def remove_amount(self, _):
         if self.slider.max > self.MAX_SLIDER_VALUE:
@@ -189,7 +178,10 @@ class FilterProductsRow(ft.Container):
         self.blur = ft.Blur(10, 15, tile_mode=ft.BlurTileMode.CLAMP)
         self.text_filter = ft.TextField(hint_text='Фильтр по названию', hint_style=HINT_STYLE_TEXT,
                                         text_style=MAIN_STYLE_TEXT, expand=2, on_change=self.filter)
-        self.list_checkbox = [ft.Checkbox(label=f'{category.name}', value=False, on_change=self.filter) for
+        self.list_checkbox = [ft.Checkbox(label=f'{category.name}',
+                                          label_style=MAIN_STYLE_TEXT,
+                                          value=False,
+                                          on_change=self.filter) for
                               category in reading_categories()]
         self.text_categories = ft.Text(value='Категории: ', style=MAIN_STYLE_TEXT, expand=3)
 
@@ -343,7 +335,6 @@ class FridgePage(MainApp):
 
     def view(self, page: ft.Page, params: Params, basket: Basket):
         MainApp.view(self, page, params, basket)
-        print(self.all_fridge)
         container = self.controls[-1]
         container.image = ft.DecorationImage(
             src="images/fridge_background.webp", repeat=ft.ImageRepeat.REPEAT

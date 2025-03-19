@@ -56,22 +56,28 @@ class RadioType(ft.RadioGroup):
             controls=[
                 ft.Radio(value='весовой', label='Весовой', label_style=LABEL_STYLE_TEXT),
                 ft.Radio(value='штучный', label='Штучный', label_style=LABEL_STYLE_TEXT),
-                ft.Radio(value='жидкость', label='Жидкий', label_style=LABEL_STYLE_TEXT)
+                ft.Radio(value='жидкость', label='Жидкий', label_style=LABEL_STYLE_TEXT),
+                ft.Radio(value='без категории', label='Без категории', label_style=LABEL_STYLE_TEXT),
             ]
         )
-        self.value = value
+        self.value = 'без категории'
+        if value:
+            self.value = value
 
 
 class ColumnAddProduct(ft.Column):
     def __init__(self, categories: list[Categories] = None, column_products: 'AllProducts' = None):
         super().__init__()
         self.categories = categories
+        self.column_products = column_products
         self.id_product = None
         self.border = ft.border.all(3, ft.colors.GREEN_900)
         self.expand = 3
         self.alignment = ft.MainAxisAlignment.SPACE_EVENLY
         self.radio_type = RadioType()
         self.in_category = ColumnCategory()
+        self.add_icon = ft.IconButton(ft.Icons.ADD, on_click=lambda e: self.add_click(e, column_products),
+                                      tooltip='Добавить продукт')
         self.all_category = ColumnCategory(
             categories_=([ContainerCategory(category, self.go_category, self.long_press_category)
                           for category in categories] if categories else []),
@@ -127,8 +133,7 @@ class ColumnAddProduct(ft.Column):
                 vertical_alignment=ft.CrossAxisAlignment.START,
                 expand=1,
                 controls=[
-                    ft.IconButton(ft.Icons.ADD, on_click=lambda e: self.add_click(e, column_products),
-                                  tooltip='Добавить/изменить продукт'),
+                    self.add_icon,
                     ft.IconButton(ft.Icons.CLEAR, on_click=self.clear_click, tooltip='Очистить форму'),
                 ]
             )
@@ -186,7 +191,9 @@ class ColumnAddProduct(ft.Column):
         self.in_category.controls.clear()
         self.all_category.controls = [ContainerCategory(category, self.go_category, self.long_press_category)
                                       for category in self.categories]
-        self.radio_type.value = None
+        self.radio_type.value = 'без категории'
+        self.add_icon.on_click = lambda e: self.add_click(e, self.column_products)
+        self.add_icon.tooltip = 'Добавить продукт'
 
         self.parent.border = ft.border.all(4, ft.colors.ORANGE_200)
         self.parent.update()
@@ -206,9 +213,25 @@ class ColumnAddProduct(ft.Column):
             ]
         )
         self.radio_type.value = product.product_type
+        self.add_icon.on_click = lambda e: self.change_product(e)
+        self.add_icon.tooltip = 'Изменить продукт'
 
         self.parent.border = ft.border.all(3, ft.colors.BLUE_900)
         self.parent.update()
+
+    def change_product(self, _: ft.ControlEvent):
+        new_product: Products = Products(
+            id=self.id_product,
+            name=self.text_name.value,
+            product_type=self.radio_type.value,
+            category_list=[category.category for category in
+                           self.in_category.controls] if self.in_category.controls else None
+        )
+        changing_del_products(new_product)
+        self.column_products.update_data(reading_products())
+        self.page.update()
+        self.clear_click(None)
+
 
     def update_data(self, categories: list[Categories]):
         # Определяем новые и удаляемые категории
@@ -329,21 +352,7 @@ class AllProducts(ft.Container):
         )
 
     def update_data(self, products: list[Products]):
-
-        existing_products_set = {p.id for p in self.products}
-        new_products = [p for p in products if p.id not in existing_products_set]
-
-        new_products_set = {p.id for p in products}
-        delete_products = [p for p in self.products if p.id not in new_products_set]
-
-        if new_products:
-            self.products.extend(new_products)
-            self.content.controls.extend(ProductRow(p, self.edit_click) for p in new_products)
-
-        if delete_products:
-            self.products = [p for p in self.products if p.id in new_products_set]
-            self.content.controls = [c for c in self.content.controls if c.product.id in new_products_set]
-
+        self.content.controls = [ProductRow(p, self.edit_click) for p in products] if products else []
         self.update()
 
     def filter(self, data_filter: dict[str, list[str] | str]):
